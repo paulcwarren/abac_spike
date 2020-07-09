@@ -4,67 +4,75 @@ import com.example.abac_spike.AbacSpikeApplication.EntityContext;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.PathBuilder;
+import com.querydsl.jpa.impl.JPADeleteClause;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import lombok.Getter;
+import lombok.Setter;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
+import org.springframework.beans.BeanWrapper;
+import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.beans.InvalidPropertyException;
 import org.springframework.content.commons.utils.BeanUtils;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.repository.support.JpaEntityInformation;
+import org.springframework.data.repository.core.EntityInformation;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.util.Assert;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Id;
-import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.lang.String.format;
 
 @Aspect
 public class QueryAugmentingAspect {
 
-    private final JpaEntityInformation ei;
+    private static final String ID_MUST_NOT_BE_NULL = "The given id must not be null!";
 
-    @PersistenceContext
-    private EntityManager em;
+    private final EntityManager em;
+    private final PlatformTransactionManager ptm;
 
-    public QueryAugmentingAspect(JpaEntityInformation ei) {
-        this.ei = ei;
+    public QueryAugmentingAspect(EntityManager em, PlatformTransactionManager ptm) {
+        this.em = em;
+        this.ptm = ptm;
     }
 
     @Around("execution(* org.springframework.data.repository.CrudRepository.findById(..))")
-    public Object findById(ProceedingJoinPoint jp) {
+    public Object findById(ProceedingJoinPoint jp) throws Throwable {
 
         String abacContext = AbacSpikeApplication.AbacContext.getCurrentAbacContext();
-        String[] abacContextFilterSpec = null;
-        if (abacContext != null) {
-            abacContextFilterSpec = abacContext.split(" ");
+        if (abacContext == null) {
+            return jp.proceed(jp.getArgs());
         }
 
         Object id = jp.getArgs()[0];
+        Assert.notNull(id, ID_MUST_NOT_BE_NULL);
 
-        PathBuilder entityPath = new PathBuilder(EntityContext.getCurrentEntityContext(), "entity");
+        PathBuilder entityPath = new PathBuilder(EntityContext.getCurrentEntityContext().getJavaType(), "entity");
 
-        Field idField = BeanUtils.findFieldWithAnnotation(EntityContext.getCurrentEntityContext(), Id.class);
-        PathBuilder idPath = entityPath.get(idField.getName(), id.getClass());
-        BooleanExpression idExpr = idPath.eq(id);
+        String[] abacContextFilterSpec = abacContext.split(" ");
 
-        BooleanExpression abacExpr = null;
-        PathBuilder abacPath = entityPath.get(abacContextFilterSpec[0], String.class);
-        if (abacContextFilterSpec[1].equals("=")) {
-            abacExpr = abacPath.eq(abacContextFilterSpec[2]);
-        }
+        BooleanExpression idExpr = idExpr(id, entityPath);
+        BooleanExpression abacExpr = abacExpr(abacContextFilterSpec, entityPath);
 
-        idExpr.and(abacExpr);
+        idExpr = idExpr.and(abacExpr);
 
         JPAQueryFactory queryFactory = new JPAQueryFactory(em);
         JPAQuery q = queryFactory.selectFrom(entityPath);
@@ -81,7 +89,7 @@ public class QueryAugmentingAspect {
         BooleanExpression abacExpr = null;
 
         Pageable pageable = (Pageable) jp.getArgs()[0];
-        PathBuilder entityPath = new PathBuilder(EntityContext.getCurrentEntityContext(), "entity");
+        PathBuilder entityPath = new PathBuilder(EntityContext.getCurrentEntityContext().getJavaType(), "entity");
 
         String abacContext = AbacSpikeApplication.AbacContext.getCurrentAbacContext();
         String[] abacContextFilterSpec = null;
@@ -103,7 +111,7 @@ public class QueryAugmentingAspect {
         q.offset(pageable.getOffset());
         q.limit(pageable.getPageSize());
         if (pageable.getSort().isSorted()) {
-            for (int i=0; i < pageable.getSort().toList().size(); i++) {
+            for (int i = 0; i < pageable.getSort().toList().size(); i++) {
                 Sort.Order order = pageable.getSort().toList().get(i);
                 if (order.isAscending()) {
                     q.orderBy(entityPath.getString(order.getProperty()).asc());
@@ -123,15 +131,21 @@ public class QueryAugmentingAspect {
         String abacContext = AbacSpikeApplication.AbacContext.getCurrentAbacContext();
         String[] abacContextFilterSpec = abacContext.split(" ");
 
-        Object[] args = joinPoint.getArgs();
-        String query = (String) args[0];
-        String updatedQuery = format("%s and %s", query, parseFilterSpec(abacContextFilterSpec));
+        QueryAST ast = QueryAST.fromQueryString((String) joinPoint.getArgs()[0]);
 
-        return joinPoint.proceed(new String[]{updatedQuery});
-    }
+        if (ast.getWhere() == null) {
+            ast.setWhere(parseFilterSpec(abacContextFilterSpec, ast.getAlias()));
+        } else {
+            Pattern pattern = Pattern.compile("^.*(?<field>" + abacContextFilterSpec[0] + ").*$");
+            Matcher matcher = pattern.matcher(ast.getWhere());
 
-    private String parseFilterSpec(String[] abacContextFilterSpec) {
-        return format("d.%s %s '%s'", abacContextFilterSpec[0], abacContextFilterSpec[1], abacContextFilterSpec[2]);
+            // only add if the field is not already in the where clause
+            if (!matcher.find()) {
+                ast.setWhere(format("%s and %s", ast.getWhere(), parseFilterSpec(abacContextFilterSpec, ast.getAlias())));
+            }
+        }
+
+        return joinPoint.proceed(new String[]{ast.toString()});
     }
 
     @Before("execution(* javax.persistence.EntityManager.createQuery(javax.persistence.criteria.CriteriaQuery))")
@@ -146,7 +160,7 @@ public class QueryAugmentingAspect {
             CriteriaQuery cq = (CriteriaQuery) args[0];
             Predicate existingPredicate = cq.getRestriction();
 
-            CriteriaBuilder cb = ((EntityManager)joinPoint.getTarget()).getCriteriaBuilder();
+            CriteriaBuilder cb = ((EntityManager) joinPoint.getTarget()).getCriteriaBuilder();
             Root<?> r = (Root<?>) cq.getRoots().toArray()[0];
 
             Predicate abacPredicate = null;
@@ -162,6 +176,182 @@ public class QueryAugmentingAspect {
             cq.where(newWherePredicate);
         } catch (Throwable e) {
             e.printStackTrace();
+        }
+    }
+
+    @Around("execution(* org.springframework.data.repository.CrudRepository.save(..))")
+    public Object save(ProceedingJoinPoint jp) throws Throwable {
+
+        String abacContext = AbacSpikeApplication.AbacContext.getCurrentAbacContext();
+        if (abacContext == null) {
+            return jp.proceed(jp.getArgs());
+        }
+
+        EntityInformation ei = EntityContext.getCurrentEntityContext();
+
+        String[] abacContextFilterSpec = null;
+        abacContextFilterSpec = abacContext.split(" ");
+
+        Object entity = jp.getArgs()[0];
+
+        if (ei.isNew(entity)) {
+            setAbacAttributes(entity, abacContextFilterSpec);
+        } else {
+            enforceAbacAttributes(entity, abacContextFilterSpec);
+        }
+
+        return jp.proceed();
+    }
+
+    @Around("execution(* org.springframework.data.repository.CrudRepository.deleteById(..))")
+    public void deleteById(ProceedingJoinPoint jp) throws Throwable {
+
+        String abacContext = AbacSpikeApplication.AbacContext.getCurrentAbacContext();
+        if (abacContext == null) {
+            jp.proceed(jp.getArgs());
+        }
+
+        Object id = jp.getArgs()[0];
+        Assert.notNull(id, ID_MUST_NOT_BE_NULL);
+
+        PathBuilder entityPath = new PathBuilder(EntityContext.getCurrentEntityContext().getJavaType(), "entity");
+
+        String[] abacContextFilterSpec = abacContext.split(" ");
+
+        BooleanExpression idExpr = idExpr(id, entityPath);
+        BooleanExpression abacExpr = abacExpr(abacContextFilterSpec, entityPath);
+        if (abacExpr != null) {
+            idExpr = idExpr.and(abacExpr);
+        }
+
+        JPAQueryFactory queryFactory = new JPAQueryFactory(em);
+        JPADeleteClause q = queryFactory.delete(entityPath);
+        if (idExpr != null) {
+            q = q.where(idExpr);
+        }
+
+        TransactionStatus status = ptm.getTransaction(TransactionDefinition.withDefaults());
+        try {
+            q.execute();
+
+            if (status != null && status.isCompleted() == false) {
+                ptm.commit(status);
+            }
+        } catch (Exception e) {
+            ptm.rollback(status);
+        }
+    }
+
+    @Around("execution(* org.springframework.data.repository.CrudRepository.delete(..))")
+    public void delete(ProceedingJoinPoint jp) throws Throwable {
+
+        String abacContext = AbacSpikeApplication.AbacContext.getCurrentAbacContext();
+        if (abacContext == null) {
+            jp.proceed(jp.getArgs());
+        }
+
+        Object entity = jp.getArgs()[0];
+        Assert.notNull(entity, "Entity must not be null!");
+
+        EntityInformation ei = EntityContext.getCurrentEntityContext();
+
+        if (ei.isNew(entity)) {
+            return;
+        }
+
+        enforceAbacAttributes(entity, abacContext.split(" "));
+
+        jp.proceed();
+    }
+
+    String parseFilterSpec(String[] abacContextFilterSpec, String alias) {
+        return format("%s.%s %s '%s'", alias, abacContextFilterSpec[0], abacContextFilterSpec[1], abacContextFilterSpec[2]);
+    }
+
+    BooleanExpression idExpr(Object id, PathBuilder entityPath) {
+        Field idField = BeanUtils.findFieldWithAnnotation(EntityContext.getCurrentEntityContext().getJavaType(), Id.class);
+        PathBuilder idPath = entityPath.get(idField.getName(), id.getClass());
+        return idPath.eq(id);
+    }
+
+    BooleanExpression abacExpr(String[] abacContextFilterSpec, PathBuilder entityPath) {
+        BooleanExpression abacExpr = null;
+        PathBuilder abacPath = entityPath.get(abacContextFilterSpec[0], String.class);
+        if (abacContextFilterSpec[1].equals("=")) {
+            abacExpr = abacPath.eq(abacContextFilterSpec[2]);
+        }
+        return abacExpr;
+    }
+
+    Object setAbacAttributes(Object entity, String[] abacContextFilterSpec) {
+
+        BeanWrapper wrapper = new BeanWrapperImpl(entity);
+        try {
+            PropertyDescriptor descriptor = wrapper.getPropertyDescriptor(abacContextFilterSpec[0]);
+            descriptor.setValue(abacContextFilterSpec[0], abacContextFilterSpec[2]);
+        } catch (InvalidPropertyException ipe) {}
+        return entity;
+    }
+
+    void enforceAbacAttributes(Object entity, String[] abacContextFilterSpec) {
+        BeanWrapper wrapper = new BeanWrapperImpl(entity);
+        try {
+            PropertyDescriptor descriptor = wrapper.getPropertyDescriptor(abacContextFilterSpec[0]);
+            Object value = descriptor.getValue(abacContextFilterSpec[0]);
+            if (!abacContextFilterSpec[2].equals(value)) {
+                throw new SecurityException();
+            }
+        } catch (InvalidPropertyException ipe) {}
+    }
+
+    @Getter
+    @Setter
+    private static class QueryAST {
+
+        private String query;
+        private String type;
+        private String alias;
+        private String where;
+        private String orderBy;
+
+        private QueryAST() {}
+
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            builder.append(query);
+            builder.append('\n');
+            builder.append("from ");
+            builder.append(type);
+            builder.append(" ");
+            builder.append(alias);
+            builder.append('\n');
+            if (this.getWhere() != null) {
+                builder.append("where ");
+                builder.append(where);
+            }
+            if (this.getOrderBy() != null) {
+                builder.append("order by ");
+                builder.append(orderBy);
+            }
+            return builder.toString();
+        }
+
+        public static QueryAST fromQueryString(String query) {
+
+            QueryAST ast = new QueryAST();
+
+            Pattern pattern = Pattern.compile("^(?<query>select.*|delete)(\\\\n|\\s)from(\\\\n|\\s)(?<type>.*?)\\s(?<alias>.*)\\swhere(\\\\n|\\s)(?<where>.*?)(\\\\n|\\s)?(order by (?<orderby>.*))?$");
+            Matcher matcher = pattern.matcher(query);
+
+            if (matcher.find()) {
+                ast.setQuery(matcher.group("query"));
+                ast.setType(matcher.group("type"));
+                ast.setAlias(matcher.group("alias"));
+                ast.setWhere(matcher.group("where"));
+                ast.setOrderBy(matcher.group("orderby"));
+            }
+
+            return ast;
         }
     }
 }

@@ -1,15 +1,19 @@
 package com.example.abac_spike;
 
 import internal.org.springframework.content.rest.utils.RepositoryUtils;
+import org.apache.batik.util.Platform;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.EnableLoadTimeWeaving;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.jpa.repository.support.JpaEntityInformationSupport;
+import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.data.repository.support.Repositories;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.web.util.UrlPathHelper;
 
 import javax.persistence.EntityManager;
@@ -18,7 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 
 @SpringBootApplication
-@EnableAspectJAutoProxy
+@EnableAspectJAutoProxy()
 @EnableJpaRepositories()
 public class AbacSpikeApplication {
 
@@ -30,32 +34,34 @@ public class AbacSpikeApplication {
 	public static class Config {
 
 		@Bean
-		public RequestFilter abacFilter(Repositories repos) {
-			return new RequestFilter(repos);
+		public RequestFilter abacFilter(Repositories repos, EntityManager em) {
+			return new RequestFilter(repos, em);
 		}
 
 		@Bean
-		public FilterRegistrationBean<RequestFilter> abacFilterRegistration(Repositories repos){
+		public FilterRegistrationBean<RequestFilter> abacFilterRegistration(Repositories repos, EntityManager em){
 			FilterRegistrationBean<RequestFilter> registrationBean = new FilterRegistrationBean<>();
 
-			registrationBean.setFilter(abacFilter(repos));
+			registrationBean.setFilter(abacFilter(repos, em));
 			registrationBean.addUrlPatterns("/*");
 
 			return registrationBean;
 		}
 
 		@Bean
-		public QueryAugmentingAspect documentRepoAbacAspect(EntityManager em) {
-			return new QueryAugmentingAspect(JpaEntityInformationSupport.getEntityInformation(Document.class, em));
+		public QueryAugmentingAspect documentRepoAbacAspect(EntityManager em, PlatformTransactionManager ptm) {
+			return new QueryAugmentingAspect(em, ptm);
 		}
 	}
 
 	public static class RequestFilter implements Filter {
 
 		private final Repositories repos;
+		private final EntityManager em;
 
-		public RequestFilter(Repositories repos) {
+		public RequestFilter(Repositories repos, EntityManager em) {
 			this.repos = repos;
+			this.em = em;
 		}
 
 		@Override
@@ -65,8 +71,9 @@ public class AbacSpikeApplication {
 			String path = new UrlPathHelper().getLookupPathForRequest(request);
 			String[] pathElements = path.split("/");
 			Class<?> entityClass = RepositoryUtils.findRepositoryInformation(repos, pathElements[1]).getDomainType();
+			EntityInformation ei = JpaEntityInformationSupport.getEntityInformation(entityClass, em);
 			if (entityClass != null) {
-				EntityContext.setCurrentEntityContext(entityClass);
+				EntityContext.setCurrentEntityContext(ei);
 			}
 
 			String tenantID = request.getHeader("X-ABAC-Context");
@@ -83,14 +90,14 @@ public class AbacSpikeApplication {
 
 	public static class EntityContext {
 
-		private static ThreadLocal<Class<?>> currentEntityContext = new InheritableThreadLocal<>();
+		private static ThreadLocal<EntityInformation> currentEntityContext = new InheritableThreadLocal<>();
 
-		public static Class<?> getCurrentEntityContext() {
+		public static EntityInformation getCurrentEntityContext() {
 			return currentEntityContext.get();
 		}
 
-		public static void setCurrentEntityContext(Class<?> entityClass) {
-			currentEntityContext.set(entityClass);
+		public static void setCurrentEntityContext(EntityInformation ei) {
+			currentEntityContext.set(ei);
 		}
 
 		public static void clear() {
