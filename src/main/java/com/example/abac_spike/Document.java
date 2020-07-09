@@ -29,4 +29,7 @@ public class Document {
 
     @MimeType
     private String mimeType;
+
+    private String name;
+    private String type;
 }
