@@ -13,13 +13,13 @@ import static javax.persistence.GenerationType.AUTO;
 
 @Entity
 @Data
-public class Document {
+public class AccountState {
 
     @Id
     @GeneratedValue(strategy=AUTO)
     private Long id;
 
-    private String tenantId = null;
+    private String brokerId = null;
 
     @ContentId
     private String contentId;

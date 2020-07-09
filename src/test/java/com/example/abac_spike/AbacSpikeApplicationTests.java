@@ -41,12 +41,12 @@ public class AbacSpikeApplicationTests {
 	private EntityManager em;
 
 	@Autowired
-	private DocumentRepository repo;
+	private AccountStateRepository repo;
 
 	@Autowired
-	private DocumentStore store;
+	private AccountStateStore store;
 
-	private Document doc;
+	private AccountState doc;
 
 	private JsonPath json;
 
@@ -62,17 +62,17 @@ public class AbacSpikeApplicationTests {
 				RestAssured.port = port;
 			});
 
-			Context("when documents are added to tenants", () -> {
+			Context("when account statements are added", () -> {
 
 				BeforeEach(() -> {
 
 					// add a document to each tenant with content
 					{
 						json = given()
-								.header("X-ABAC-Context", "tenantId = foo")
+								.header("X-ABAC-Context", "brokerId = foo")
 								.header("content-type", "application/hal+json")
-								.body("{\"tenantId\":\"foo\",\"name\":\"zzz\",\"type\":\"sop_document\"}")
-								.post("/documents/")
+								.body("{\"brokerId\":\"foo\",\"name\":\"zzz\",\"type\":\"sop_document\"}")
+								.post("/accountStates/")
 								.then()
 								.statusCode(HttpStatus.SC_CREATED)
 								.extract().jsonPath();
@@ -82,7 +82,7 @@ public class AbacSpikeApplicationTests {
 						given()
 								.config(RestAssured.config()
 										.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-								.header("X-ABAC-Context", "tenantId = foo")
+								.header("X-ABAC-Context", "brokerId = foo")
 								.header("content-type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 								.body(IOUtils.toByteArray(this.getClass().getResourceAsStream("/sample-docx.docx")))
 								.post(tenantFooDoc1)
@@ -90,10 +90,10 @@ public class AbacSpikeApplicationTests {
 								.statusCode(HttpStatus.SC_CREATED);
 
 						json = given()
-								.header("X-ABAC-Context", "tenantId = bar")
+								.header("X-ABAC-Context", "brokerId = bar")
 								.header("content-type", "application/hal+json")
-								.body("{\"tenantId\":\"bar\",\"name\":\"www\",\"type\":\"sop_document\"}")
-								.post("/documents/")
+								.body("{\"brokerId\":\"bar\",\"name\":\"www\",\"type\":\"sop_document\"}")
+								.post("/accountStates/")
 								.then()
 								.statusCode(HttpStatus.SC_CREATED)
 								.extract().jsonPath();
@@ -102,7 +102,7 @@ public class AbacSpikeApplicationTests {
 						given()
 								.config(RestAssured.config()
 										.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-								.header("X-ABAC-Context", "tenantId = bar")
+								.header("X-ABAC-Context", "brokerId = bar")
 								.header("content-type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 								.body(IOUtils.toByteArray(this.getClass().getResourceAsStream("/sample-docx.docx")))
 								.post(tenantBarDoc1)
@@ -110,10 +110,10 @@ public class AbacSpikeApplicationTests {
 								.statusCode(HttpStatus.SC_CREATED);
 
 						json = given()
-								.header("X-ABAC-Context", "tenantId = foo")
+								.header("X-ABAC-Context", "brokerId = foo")
 								.header("content-type", "application/hal+json")
-								.body("{\"tenantId\":\"foo\",\"name\":\"ppp\",\"type\":\"sop_document\"}")
-								.post("/documents/")
+								.body("{\"brokerId\":\"foo\",\"name\":\"ppp\",\"type\":\"sop_document\"}")
+								.post("/accountStates/")
 								.then()
 								.statusCode(HttpStatus.SC_CREATED)
 								.extract().jsonPath();
@@ -122,7 +122,7 @@ public class AbacSpikeApplicationTests {
 						given()
 								.config(RestAssured.config()
 										.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-								.header("X-ABAC-Context", "tenantId = foo")
+								.header("X-ABAC-Context", "brokerId = foo")
 								.header("content-type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 								.body(IOUtils.toByteArray(this.getClass().getResourceAsStream("/sample-docx.docx")))
 								.post(tenantFooDoc2)
@@ -130,10 +130,10 @@ public class AbacSpikeApplicationTests {
 								.statusCode(HttpStatus.SC_CREATED);
 
 						json = given()
-								.header("X-ABAC-Context", "tenantId = foo")
+								.header("X-ABAC-Context", "brokerId = foo")
 								.header("content-type", "application/hal+json")
-								.body("{\"tenantId\":\"foo\",\"name\":\"aaa\",\"type\":\"sop_document\"}")
-								.post("/documents/")
+								.body("{\"brokerId\":\"foo\",\"name\":\"aaa\",\"type\":\"sop_document\"}")
+								.post("/accountStates/")
 								.then()
 								.statusCode(HttpStatus.SC_CREATED)
 								.extract().jsonPath();
@@ -142,7 +142,7 @@ public class AbacSpikeApplicationTests {
 						given()
 								.config(RestAssured.config()
 										.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-								.header("X-ABAC-Context", "tenantId = foo")
+								.header("X-ABAC-Context", "brokerId = foo")
 								.header("content-type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 								.body(IOUtils.toByteArray(this.getClass().getResourceAsStream("/sample-docx.docx")))
 								.post(tenantFooDoc3)
@@ -170,29 +170,29 @@ public class AbacSpikeApplicationTests {
 
 				Context("#findAll", () -> {
 
-					Context("when a findAll query is executed by a user from tenant foo", () -> {
+					Context("given a findAll for account states executed by broker foo", () -> {
 
 						BeforeEach(() -> {
 							json = given()
 									.config(RestAssured.config()
 											.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-									.header("X-ABAC-Context", "tenantId = foo")
-									.get("/documents?page=0&size=2&sort=name&name.dir=asc")
+									.header("X-ABAC-Context", "brokerId = foo")
+									.get("/accountStates?page=0&size=2&sort=name&name.dir=asc")
 									.then()
 									.statusCode(HttpStatus.SC_OK)
 									.extract().jsonPath();
 
 						});
 
-						It("should only return results for tenant foo", () -> {
-							int count = json.getList("_embedded.documents").size();
+						It("should only return account statements owned by broker foo", () -> {
+							int count = json.getList("_embedded.accountStates").size();
 							assertThat(count, is(2));
 							String previousName = "";
 							for (int i = 0; i < count; i++) {
-								assertThat(json.getString(format("_embedded.documents[%s].tenantId", i)), is("foo"));
-								assertThat(json.getString(format("_embedded.documents[%s].type", i)), is("sop_document"));
-								assertThat(json.getString(format("_embedded.documents[%s].name", i)), is(greaterThanOrEqualTo(previousName)));
-								previousName = json.getString(format("_embedded.documents[%s].name", i));
+								assertThat(json.getString(format("_embedded.accountStates[%s].brokerId", i)), is("foo"));
+								assertThat(json.getString(format("_embedded.accountStates[%s].type", i)), is("sop_document"));
+								assertThat(json.getString(format("_embedded.accountStates[%s].name", i)), is(greaterThanOrEqualTo(previousName)));
+								previousName = json.getString(format("_embedded.accountStates[%s].name", i));
 							}
 						});
 					});
@@ -223,30 +223,30 @@ public class AbacSpikeApplicationTests {
 
 				Context("#findBy methods", () -> {
 
-					Context("when a custom findByXYZ method is executed by a user from tenant foo", () -> {
+					Context("given a custom findByXYZ is executed by broker foo", () -> {
 
 						BeforeEach(() -> {
 							json = given()
 									.config(RestAssured.config()
 											.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-									.header("X-ABAC-Context", "tenantId = foo")
+									.header("X-ABAC-Context", "brokerId = foo")
 									.header("accept", "application/hal+json")
-									.get("/documents/search/findByType?type=sop_document&page=0&size=2&sort=name&name.dir=asc")
+									.get("/accountStates/search/findByType?type=sop_document&page=0&size=2&sort=name&name.dir=asc")
 									.then()
 									.statusCode(HttpStatus.SC_OK)
 									.extract().jsonPath();
 
 						});
 
-						It("should only return results for tenant foo", () -> {
-							int count = json.getList("_embedded.documents").size();
+						It("should only return account statements owned by broker foo", () -> {
+							int count = json.getList("_embedded.accountStates").size();
 							assertThat(count, is(2));
 							String previousName = "";
 							for (int i = 0; i < count; i++) {
-								assertThat(json.getString(format("_embedded.documents[%s].tenantId", i)), is("foo"));
-								assertThat(json.getString(format("_embedded.documents[%s].type", i)), is("sop_document"));
-								assertThat(json.getString(format("_embedded.documents[%s].name", i)), is(greaterThanOrEqualTo(previousName)));
-								previousName = json.getString(format("_embedded.documents[%s].name", i));
+								assertThat(json.getString(format("_embedded.accountStates[%s].brokerId", i)), is("foo"));
+								assertThat(json.getString(format("_embedded.accountStates[%s].type", i)), is("sop_document"));
+								assertThat(json.getString(format("_embedded.accountStates[%s].name", i)), is(greaterThanOrEqualTo(previousName)));
+								previousName = json.getString(format("_embedded.accountStates[%s].name", i));
 							}
 						});
 					});
@@ -255,26 +255,25 @@ public class AbacSpikeApplicationTests {
 
 				Context("@Query methods", () -> {
 
-					Context("when a custom query method is executed by a user from tenant foo", () -> {
+					Context("when a custom query method is executed by broker foo", () -> {
 
 						BeforeEach(() -> {
 							json = given()
 									.config(RestAssured.config()
 											.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-									.header("X-ABAC-Context", "tenantId = foo")
+									.header("X-ABAC-Context", "brokerId = foo")
 									.header("accept", "application/hal+json")
-									.get("/documents/search/byType?type=sop_document")
+									.get("/accountStates/search/byType?type=sop_document")
 									.then()
 									.statusCode(HttpStatus.SC_OK)
 									.extract().jsonPath();
-
 						});
 
-						It("should only return results for tenant foo", () -> {
-							int count = json.getList("_embedded.documents").size();
+						It("should only return account statements owned by broker foo", () -> {
+							int count = json.getList("_embedded.accountStates").size();
 							for (int i = 0; i < count; i++) {
-								assertThat(json.getString(format("_embedded.documents[%s].tenantId", i)), is("foo"));
-								assertThat(json.getString(format("_embedded.documents[%s].type", i)), is("sop_document"));
+								assertThat(json.getString(format("_embedded.accountStates[%s].brokerId", i)), is("foo"));
+								assertThat(json.getString(format("_embedded.accountStates[%s].type", i)), is("sop_document"));
 							}
 						});
 					});
@@ -282,14 +281,14 @@ public class AbacSpikeApplicationTests {
 
 				Context("#save", () -> {
 
-					Context("when an authorized principal updates a documents", () -> {
+					Context("when a broker updates an account statement they own", () -> {
 
 						It("should succeed", () -> {
 
 							int statusCode = given()
 									.config(RestAssured.config()
 											.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-									.header("X-ABAC-Context", "tenantId = foo")
+									.header("X-ABAC-Context", "brokerId = foo")
 									.header("Content-Type", "application/hal+json")
 									.body("{\"name\":\"zzz updated\"}")
 									.put(tenantFooDoc1)
@@ -299,19 +298,19 @@ public class AbacSpikeApplicationTests {
 
 							assertThat(statusCode, is(200));
 
-							Optional<Document> one = repo.findById(Long.parseLong(StringUtils.substringAfter(tenantFooDoc1, "/documents/")));
+							Optional<AccountState> one = repo.findById(Long.parseLong(StringUtils.substringAfter(tenantFooDoc1, "/accountStates/")));
 							assertThat(one.get().getName(), is("zzz updated"));
 						});
 					});
 
-					Context("when an unauthorized principal updates a documents", () -> {
+					Context("when a broker updates an account statement they do not own", () -> {
 
-						It("should succeed", () -> {
+						It("should fail with a 404", () -> {
 
 							given()
 									.config(RestAssured.config()
 											.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-									.header("X-ABAC-Context", "tenantId = bar")
+									.header("X-ABAC-Context", "brokerId = bar")
 									.header("Content-Type", "application/hal+json")
 									.body("{\"name\":\"zzz updated\"}")
 									.put(tenantFooDoc1)
@@ -323,32 +322,32 @@ public class AbacSpikeApplicationTests {
 
 				Context("#delete", () -> {
 
-					Context("when an authorized principal deletes a documents", () -> {
+					Context("when a broker deletes an account statement they own", () -> {
 
 						It("should succeed", () -> {
 
 							given()
 									.config(RestAssured.config()
 											.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-									.header("X-ABAC-Context", "tenantId = foo")
+									.header("X-ABAC-Context", "brokerId = foo")
 									.header("Accept", "application/hal+json")
 									.delete(tenantFooDoc1)
 									.then()
 									.statusCode(HttpStatus.SC_NO_CONTENT);
 
-							Optional<Document> one = repo.findById(Long.parseLong(StringUtils.substringAfter(tenantFooDoc1, "/documents/")));
+							Optional<AccountState> one = repo.findById(Long.parseLong(StringUtils.substringAfter(tenantFooDoc1, "/accountStates/")));
 							assertThat(one.isPresent(), is(false));
 						});
 					});
 
-					Context("when an unauthorized principal deletes a documents", () -> {
+					Context("when a broker deletes an account statement they do not own", () -> {
 
 						It("should fail with a 404", () -> {
 
 							given()
 									.config(RestAssured.config()
 											.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-									.header("X-ABAC-Context", "tenantId = bar")
+									.header("X-ABAC-Context", "brokerId = bar")
 									.header("Accept", "application/hal+json")
 									.delete(tenantFooDoc1)
 									.then()
