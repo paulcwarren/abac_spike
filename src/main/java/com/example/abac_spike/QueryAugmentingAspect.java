@@ -31,10 +31,7 @@ import org.springframework.util.NumberUtils;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Id;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
+import javax.persistence.criteria.*;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.util.Optional;
@@ -203,7 +200,15 @@ public class QueryAugmentingAspect {
 
             Predicate abacPredicate = null;
             if (abacContextFilterSpec[1].equals("=")) {
-                abacPredicate = cb.equal(r.get(abacContextFilterSpec[0]), typedValueFromConstant(abacContextFilterSpec[2]));
+
+                String[] pathSegments = abacContextFilterSpec[0].split("\\.");
+                From f = r;
+                int i=0;
+                for (; i < pathSegments.length - 1; i++) {
+                    f = f.join(pathSegments[i]);
+                }
+
+                abacPredicate = cb.equal(f.get(pathSegments[pathSegments.length - 1]), typedValueFromConstant(abacContextFilterSpec[2]));
             }
 
             Predicate newWherePredicate = existingPredicate;
