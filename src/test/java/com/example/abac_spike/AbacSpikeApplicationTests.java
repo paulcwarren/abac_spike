@@ -15,8 +15,6 @@ import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.context.ApplicationContext;
 
 import javax.persistence.EntityManager;
-
-import java.util.List;
 import java.util.Optional;
 
 import static com.github.paulcwarren.ginkgo4j.Ginkgo4jDSL.*;
@@ -26,6 +24,7 @@ import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.isIn;
 
 @RunWith(Ginkgo4jSpringRunner.class)
 @Ginkgo4jConfiguration(threads=1)
@@ -263,6 +262,7 @@ public class AbacSpikeApplicationTests {
 							for (int i = 0; i < count; i++) {
 //								assertThat(json.getString(format("_embedded.accountStates[%s].brokerId", i)), is("foo"));
 								assertThat(json.getString(format("_embedded.accountStates[%s].type", i)), is("sop_document"));
+								assertThat(json.getString(format("_embedded.accountStates[%s].name", i)), is(isIn(new String[]{"aaa", "ppp"})));
 								assertThat(json.getString(format("_embedded.accountStates[%s].name", i)), is(greaterThanOrEqualTo(previousName)));
 								previousName = json.getString(format("_embedded.accountStates[%s].name", i));
 							}
@@ -315,8 +315,8 @@ public class AbacSpikeApplicationTests {
 							assertThat(count, is(2));
 							String previousName = "";
 							for (int i = 0; i < count; i++) {
-//								assertThat(json.getString(format("_embedded.accountStates[%s].brokerId", i)), is("foo"));
 								assertThat(json.getString(format("_embedded.accountStates[%s].type", i)), is("sop_document"));
+								assertThat(json.getString(format("_embedded.accountStates[%s].name", i)), is(isIn(new String[]{"aaa", "ppp"})));
 								assertThat(json.getString(format("_embedded.accountStates[%s].name", i)), is(greaterThanOrEqualTo(previousName)));
 								previousName = json.getString(format("_embedded.accountStates[%s].name", i));
 							}
@@ -345,6 +345,7 @@ public class AbacSpikeApplicationTests {
 							int count = json.getList("_embedded.accountStates").size();
 							for (int i = 0; i < count; i++) {
 //								assertThat(json.getString(format("_embedded.accountStates[%s].brokerId", i)), is("foo"));
+								assertThat(json.getString(format("_embedded.accountStates[%s].name", i)), is(isIn(new String[]{"aaa", "ppp", "zzz"})));
 								assertThat(json.getString(format("_embedded.accountStates[%s].type", i)), is("sop_document"));
 							}
 						});
