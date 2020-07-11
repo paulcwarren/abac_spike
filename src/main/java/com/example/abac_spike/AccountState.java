@@ -17,8 +17,6 @@ public class AccountState {
     @GeneratedValue(strategy=AUTO)
     private Long id;
 
-    private String brokerId = null;
-
     @ContentId
     private String contentId;
 
