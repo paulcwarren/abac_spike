@@ -83,23 +83,19 @@ public class QueryAugmentingAspect {
     }
 
     @Around("execution(* org.springframework.data.repository.PagingAndSortingRepository.findAll(org.springframework.data.domain.Pageable))")
-    public Object findAll(ProceedingJoinPoint jp) {
+    public Object findAll(ProceedingJoinPoint jp) throws Throwable {
+
+        String abacContext = AbacSpikeApplication.AbacContext.getCurrentAbacContext();
+        if (abacContext == null) {
+            return jp.proceed(jp.getArgs());
+        }
 
         BooleanExpression abacExpr = null;
 
         Pageable pageable = (Pageable) jp.getArgs()[0];
         PathBuilder entityPath = new PathBuilder(EntityContext.getCurrentEntityContext().getJavaType(), "entity");
 
-        String abacContext = AbacSpikeApplication.AbacContext.getCurrentAbacContext();
-        String[] abacContextFilterSpec = null;
-        if (abacContext != null) {
-            abacContextFilterSpec = abacContext.split(" ");
-
-            PathBuilder abacPath = entityPath.get(abacContextFilterSpec[0], typeFromConstant(abacContextFilterSpec[2]));
-            if (abacContextFilterSpec[1].equals("=")) {
-                abacExpr = abacPath.eq(typedValueFromConstant(abacContextFilterSpec[2]));
-            }
-        }
+        abacExpr = abacExpr(abacContext.split(" "), entityPath);
 
         JPAQueryFactory queryFactory = new JPAQueryFactory(em);
         JPAQuery q = queryFactory.selectFrom(entityPath);
@@ -122,42 +118,6 @@ public class QueryAugmentingAspect {
 
         QueryResults results = q.fetchResults();
         return new PageImpl(results.getResults(), pageable, results.getTotal());
-    }
-
-    Class<?> typeFromConstant(String s) {
-
-        Class<?> type = String.class;
-        if (s.endsWith("L")) {
-            type = Long.class;
-        } else if (s.endsWith("f")) {
-            type = Float.class;
-        } else if (s.endsWith("d")) {
-            type = Double.class;
-        } else {
-            try {
-                Integer.parseInt(s);
-                type = Integer.class;
-            } catch (NumberFormatException nfe) {}
-        }
-
-        return type;
-    }
-
-    private Object typedValueFromConstant(String s) {
-
-        if (s.endsWith("L")) {
-            return Long.parseLong(s.replace("L", ""));
-        } else if (s.endsWith("f")) {
-            return Float.parseFloat(s.replace("f", ""));
-        } else if (s.endsWith("d")) {
-            return Double.parseDouble(s.replace("d", ""));
-        } else {
-            try {
-                int i = Integer.parseInt(s);
-                return i;
-            } catch (NumberFormatException nfe) {}
-        }
-        return s;
     }
 
     @Around("execution(* javax.persistence.EntityManager.createQuery(java.lang.String))")
@@ -305,6 +265,42 @@ public class QueryAugmentingAspect {
         enforceAbacAttributes(entity, abacContext.split(" "));
 
         jp.proceed();
+    }
+
+    Class<?> typeFromConstant(String s) {
+
+        Class<?> type = String.class;
+        if (s.endsWith("L")) {
+            type = Long.class;
+        } else if (s.endsWith("f")) {
+            type = Float.class;
+        } else if (s.endsWith("d")) {
+            type = Double.class;
+        } else {
+            try {
+                Integer.parseInt(s);
+                type = Integer.class;
+            } catch (NumberFormatException nfe) {}
+        }
+
+        return type;
+    }
+
+    Object typedValueFromConstant(String s) {
+
+        if (s.endsWith("L")) {
+            return Long.parseLong(s.replace("L", ""));
+        } else if (s.endsWith("f")) {
+            return Float.parseFloat(s.replace("f", ""));
+        } else if (s.endsWith("d")) {
+            return Double.parseDouble(s.replace("d", ""));
+        } else {
+            try {
+                int i = Integer.parseInt(s);
+                return i;
+            } catch (NumberFormatException nfe) {}
+        }
+        return s;
     }
 
     String parseFilterSpec(String[] abacContextFilterSpec, String alias) {
