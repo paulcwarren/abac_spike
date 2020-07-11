@@ -16,6 +16,7 @@ import org.springframework.context.ApplicationContext;
 
 import javax.persistence.EntityManager;
 
+import java.util.List;
 import java.util.Optional;
 
 import static com.github.paulcwarren.ginkgo4j.Ginkgo4jDSL.*;
@@ -51,10 +52,19 @@ public class AbacSpikeApplicationTests {
 	private JsonPath json;
 
 	private String tenantFooDoc1;
+	private String tenantFooDoc1Content;
 	private String tenantFooDoc2;
+	private String tenantFooDoc2Content;
 	private String tenantFooDoc3;
+	private String tenantFooDoc3Content;
 
 	private String tenantBarDoc1;
+	private String tenantBarDoc1Content;
+
+	private String brokerFooUri;
+	private String brokerBarUri;
+
+
 
 	{
 		Describe("ABAC Example", () -> {
@@ -66,7 +76,30 @@ public class AbacSpikeApplicationTests {
 
 				BeforeEach(() -> {
 
-					// add a document to each tenant with content
+					// add some brokers
+					{
+						json = given()
+								.header("content-type", "application/hal+json")
+								.body("{\"name\":\"foo\"}")
+								.post("/brokers/")
+								.then()
+								.statusCode(HttpStatus.SC_CREATED)
+								.extract().jsonPath();
+
+						brokerFooUri = (String) json.get("_links.self.href");
+
+						json = given()
+								.header("content-type", "application/hal+json")
+								.body("{\"name\":\"bar\"}")
+								.post("/brokers/")
+								.then()
+								.statusCode(HttpStatus.SC_CREATED)
+								.extract().jsonPath();
+
+						brokerBarUri = (String) json.get("_links.self.href");
+					}
+
+					// add account statements owned by brokers' broker ID
 					{
 						json = given()
 								.header("X-ABAC-Context", "brokerId = foo")
@@ -78,6 +111,7 @@ public class AbacSpikeApplicationTests {
 								.extract().jsonPath();
 
 						tenantFooDoc1 = (String) json.get("_links.self.href");
+						tenantFooDoc1Content = (String) json.get("_links.accountStates.href");
 
 						given()
 								.config(RestAssured.config()
@@ -85,7 +119,7 @@ public class AbacSpikeApplicationTests {
 								.header("X-ABAC-Context", "brokerId = foo")
 								.header("content-type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 								.body(IOUtils.toByteArray(this.getClass().getResourceAsStream("/sample-docx.docx")))
-								.post(tenantFooDoc1)
+								.post(tenantFooDoc1Content)
 								.then()
 								.statusCode(HttpStatus.SC_CREATED);
 
@@ -99,13 +133,15 @@ public class AbacSpikeApplicationTests {
 								.extract().jsonPath();
 
 						tenantBarDoc1 = (String) json.get("_links.self.href");
+						tenantBarDoc1Content = (String) json.get("_links.accountStates.href");
+
 						given()
 								.config(RestAssured.config()
 										.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
 								.header("X-ABAC-Context", "brokerId = bar")
 								.header("content-type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 								.body(IOUtils.toByteArray(this.getClass().getResourceAsStream("/sample-docx.docx")))
-								.post(tenantBarDoc1)
+								.post(tenantBarDoc1Content)
 								.then()
 								.statusCode(HttpStatus.SC_CREATED);
 
@@ -119,13 +155,15 @@ public class AbacSpikeApplicationTests {
 								.extract().jsonPath();
 
 						tenantFooDoc2 = (String) json.get("_links.self.href");
+						tenantFooDoc2Content = (String) json.get("_links.accountStates.href");
+
 						given()
 								.config(RestAssured.config()
 										.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
 								.header("X-ABAC-Context", "brokerId = foo")
 								.header("content-type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 								.body(IOUtils.toByteArray(this.getClass().getResourceAsStream("/sample-docx.docx")))
-								.post(tenantFooDoc2)
+								.post(tenantFooDoc2Content)
 								.then()
 								.statusCode(HttpStatus.SC_CREATED);
 
@@ -139,15 +177,52 @@ public class AbacSpikeApplicationTests {
 								.extract().jsonPath();
 
 						tenantFooDoc3 = (String) json.get("_links.self.href");
+						tenantFooDoc3Content = (String) json.get("_links.accountStates.href");
+
 						given()
 								.config(RestAssured.config()
 										.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
 								.header("X-ABAC-Context", "brokerId = foo")
 								.header("content-type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 								.body(IOUtils.toByteArray(this.getClass().getResourceAsStream("/sample-docx.docx")))
-								.post(tenantFooDoc3)
+								.post(tenantFooDoc3Content)
 								.then()
 								.statusCode(HttpStatus.SC_CREATED);
+					}
+
+					// associate the account statements with brokers
+					{
+						json = given()
+								.contentType("text/uri-list")
+								.body(format("%s", brokerFooUri))
+								.put(tenantFooDoc1 + "/bbroker")
+								.then()
+								.statusCode(HttpStatus.SC_NO_CONTENT)
+								.extract().jsonPath();
+
+						json = given()
+								.contentType("text/uri-list")
+								.body(format("%s", brokerFooUri))
+								.put(tenantFooDoc2 + "/bbroker")
+								.then()
+								.statusCode(HttpStatus.SC_NO_CONTENT)
+								.extract().jsonPath();
+
+						json = given()
+								.contentType("text/uri-list")
+								.body(format("%s", brokerFooUri))
+								.put(tenantFooDoc3 + "/bbroker")
+								.then()
+								.statusCode(HttpStatus.SC_NO_CONTENT)
+								.extract().jsonPath();
+
+						json = given()
+								.contentType("text/uri-list")
+								.body(format("%s", brokerBarUri))
+								.put(tenantBarDoc1 + "/bbroker")
+								.then()
+								.statusCode(HttpStatus.SC_NO_CONTENT)
+								.extract().jsonPath();
 					}
 
 					// add some other documents
@@ -176,7 +251,7 @@ public class AbacSpikeApplicationTests {
 							json = given()
 									.config(RestAssured.config()
 											.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-									.header("X-ABAC-Context", "brokerId = foo")
+									.header("X-ABAC-Context", "bbroker.id = " + StringUtils.substringAfter(brokerFooUri, "/brokers/") + "L")
 									.get("/accountStates?page=0&size=2&sort=name&name.dir=asc")
 									.then()
 									.statusCode(HttpStatus.SC_OK)

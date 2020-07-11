@@ -5,9 +5,7 @@ import org.springframework.content.commons.annotations.ContentId;
 import org.springframework.content.commons.annotations.ContentLength;
 import org.springframework.content.commons.annotations.MimeType;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.persistence.*;
 
 import static javax.persistence.GenerationType.AUTO;
 
@@ -32,4 +30,8 @@ public class AccountState {
 
     private String name;
     private String type;
+
+    @JoinColumn
+    @ManyToOne
+    private Broker bbroker;
 }

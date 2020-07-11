@@ -26,6 +26,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.util.Assert;
+import org.springframework.util.NumberUtils;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Id;
@@ -96,9 +97,9 @@ public class QueryAugmentingAspect {
         if (abacContext != null) {
             abacContextFilterSpec = abacContext.split(" ");
 
-            PathBuilder abacPath = entityPath.get(abacContextFilterSpec[0], String.class);
+            PathBuilder abacPath = entityPath.get(abacContextFilterSpec[0], typeFromConstant(abacContextFilterSpec[2]));
             if (abacContextFilterSpec[1].equals("=")) {
-                abacExpr = abacPath.eq(abacContextFilterSpec[2]);
+                abacExpr = abacPath.eq(typedValueFromConstant(abacContextFilterSpec[2]));
             }
         }
 
@@ -123,6 +124,42 @@ public class QueryAugmentingAspect {
 
         QueryResults results = q.fetchResults();
         return new PageImpl(results.getResults(), pageable, results.getTotal());
+    }
+
+    Class<?> typeFromConstant(String s) {
+
+        Class<?> type = String.class;
+        if (s.endsWith("L")) {
+            type = Long.class;
+        } else if (s.endsWith("f")) {
+            type = Float.class;
+        } else if (s.endsWith("d")) {
+            type = Double.class;
+        } else {
+            try {
+                Integer.parseInt(s);
+                type = Integer.class;
+            } catch (NumberFormatException nfe) {}
+        }
+
+        return String.class;
+    }
+
+    private Object typedValueFromConstant(String s) {
+
+        if (s.endsWith("L")) {
+            return Long.parseLong(s.replace("L", ""));
+        } else if (s.endsWith("f")) {
+            return Float.parseFloat(s.replace("f", ""));
+        } else if (s.endsWith("d")) {
+            return Double.parseDouble(s.replace("d", ""));
+        } else {
+            try {
+                int i = Integer.parseInt(s);
+                return i;
+            } catch (NumberFormatException nfe) {}
+        }
+        return s;
     }
 
     @Around("execution(* javax.persistence.EntityManager.createQuery(java.lang.String))")

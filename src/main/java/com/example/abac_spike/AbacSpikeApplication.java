@@ -5,13 +5,18 @@ import org.apache.batik.util.Platform;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.content.fs.config.FilesystemStoreConfigurer;
+import org.springframework.content.rest.config.ContentRestConfigurer;
+import org.springframework.content.rest.config.RestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.EnableLoadTimeWeaving;
+import org.springframework.core.convert.converter.ConverterRegistry;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.jpa.repository.support.JpaEntityInformationSupport;
 import org.springframework.data.repository.core.EntityInformation;
+import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.support.Repositories;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.web.util.UrlPathHelper;
@@ -20,6 +25,9 @@ import javax.persistence.EntityManager;
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.net.URI;
+
+import static java.lang.String.format;
 
 @SpringBootApplication
 @EnableAspectJAutoProxy()
@@ -49,6 +57,16 @@ public class AbacSpikeApplication {
 		}
 
 		@Bean
+		public ContentRestConfigurer restConfigurer() {
+			return new ContentRestConfigurer() {
+				@Override
+				public void configure(RestConfiguration config) {
+					config.setBaseUri(URI.create("/content"));
+				}
+			};
+		}
+
+		@Bean
 		public QueryAugmentingAspect documentRepoAbacAspect(EntityManager em, PlatformTransactionManager ptm) {
 			return new QueryAugmentingAspect(em, ptm);
 		}
@@ -70,7 +88,15 @@ public class AbacSpikeApplication {
 
 			String path = new UrlPathHelper().getLookupPathForRequest(request);
 			String[] pathElements = path.split("/");
-			Class<?> entityClass = RepositoryUtils.findRepositoryInformation(repos, pathElements[1]).getDomainType();
+			RepositoryInformation ri = RepositoryUtils.findRepositoryInformation(repos, pathElements[1]);
+			if (ri == null) {
+				ri = RepositoryUtils.findRepositoryInformation(repos, pathElements[2]);
+			}
+			if (ri == null) {
+				throw new IllegalStateException(format("Unable to resolve entity class: %s", path));
+			}
+			Class<?> entityClass = ri.getDomainType();
+
 			EntityInformation ei = JpaEntityInformationSupport.getEntityInformation(entityClass, em);
 			if (entityClass != null) {
 				EntityContext.setCurrentEntityContext(ei);
