@@ -17,6 +17,7 @@ import org.aspectj.lang.annotation.Before;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.beans.InvalidPropertyException;
+import org.springframework.beans.NullValueInNestedPathException;
 import org.springframework.content.commons.utils.BeanUtils;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -142,7 +143,7 @@ public class QueryAugmentingAspect {
             } catch (NumberFormatException nfe) {}
         }
 
-        return String.class;
+        return type;
     }
 
     private Object typedValueFromConstant(String s) {
@@ -202,7 +203,7 @@ public class QueryAugmentingAspect {
 
             Predicate abacPredicate = null;
             if (abacContextFilterSpec[1].equals("=")) {
-                abacPredicate = cb.equal(r.get(abacContextFilterSpec[0]), abacContextFilterSpec[2]);
+                abacPredicate = cb.equal(r.get(abacContextFilterSpec[0]), typedValueFromConstant(abacContextFilterSpec[2]));
             }
 
             Predicate newWherePredicate = existingPredicate;
@@ -302,7 +303,11 @@ public class QueryAugmentingAspect {
     }
 
     String parseFilterSpec(String[] abacContextFilterSpec, String alias) {
-        return format("%s.%s %s '%s'", alias, abacContextFilterSpec[0], abacContextFilterSpec[1], abacContextFilterSpec[2]);
+        if (String.class.equals(typeFromConstant(abacContextFilterSpec[2]))) {
+            return format("%s.%s %s '%s'", alias, abacContextFilterSpec[0], abacContextFilterSpec[1], abacContextFilterSpec[2]);
+        } else {
+            return format("%s.%s %s %s", alias, abacContextFilterSpec[0], abacContextFilterSpec[1], typedValueFromConstant(abacContextFilterSpec[2]));
+        }
     }
 
     BooleanExpression idExpr(Object id, PathBuilder entityPath) {
@@ -313,9 +318,9 @@ public class QueryAugmentingAspect {
 
     BooleanExpression abacExpr(String[] abacContextFilterSpec, PathBuilder entityPath) {
         BooleanExpression abacExpr = null;
-        PathBuilder abacPath = entityPath.get(abacContextFilterSpec[0], String.class);
+        PathBuilder abacPath = entityPath.get(abacContextFilterSpec[0], typeFromConstant(abacContextFilterSpec[2]));
         if (abacContextFilterSpec[1].equals("=")) {
-            abacExpr = abacPath.eq(abacContextFilterSpec[2]);
+            abacExpr = abacPath.eq(typedValueFromConstant(abacContextFilterSpec[2]));
         }
         return abacExpr;
     }
@@ -333,11 +338,12 @@ public class QueryAugmentingAspect {
     void enforceAbacAttributes(Object entity, String[] abacContextFilterSpec) {
         BeanWrapper wrapper = new BeanWrapperImpl(entity);
         try {
-            PropertyDescriptor descriptor = wrapper.getPropertyDescriptor(abacContextFilterSpec[0]);
-            Object value = descriptor.getValue(abacContextFilterSpec[0]);
-            if (!abacContextFilterSpec[2].equals(value)) {
+            Object value = wrapper.getPropertyValue(abacContextFilterSpec[0]);
+            if (!typedValueFromConstant(abacContextFilterSpec[2]).equals(value)) {
                 throw new SecurityException();
             }
+        } catch (NullValueInNestedPathException nvinpe) {
+            throw new SecurityException();
         } catch (InvalidPropertyException ipe) {}
     }
 

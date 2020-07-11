@@ -9,8 +9,6 @@ import java.util.List;
 
 public interface AccountStateRepository extends JpaRepository<AccountState, Long> {
 
-    List<AccountState> findByBrokerId(String tenantId);
-
     List<AccountState> findByType(String type, Pageable pageable);
 
     @Query("select d from AccountState d where d.type = :type")
