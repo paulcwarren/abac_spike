@@ -31,5 +31,5 @@ public class AccountState {
 
     @JoinColumn
     @ManyToOne
-    private Broker bbroker;
+    private Broker broker;
 }

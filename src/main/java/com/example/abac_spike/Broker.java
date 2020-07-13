@@ -23,6 +23,6 @@ public class Broker {
 //
     private String name;
 
-    @OneToMany(mappedBy = "bbroker", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "broker", cascade = CascadeType.ALL)
     private Set<AccountState> accountStates = new HashSet<>();
 }
