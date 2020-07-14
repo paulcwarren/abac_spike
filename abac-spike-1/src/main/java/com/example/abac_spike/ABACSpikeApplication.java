@@ -38,21 +38,6 @@ public class ABACSpikeApplication {
 	public static class Config {
 
 		@Bean
-		public RequestFilter abacFilter(Repositories repos, EntityManager em) {
-			return new RequestFilter(repos, em);
-		}
-
-		@Bean
-		public FilterRegistrationBean<RequestFilter> abacFilterRegistration(Repositories repos, EntityManager em){
-			FilterRegistrationBean<RequestFilter> registrationBean = new FilterRegistrationBean<>();
-
-			registrationBean.setFilter(abacFilter(repos, em));
-			registrationBean.addUrlPatterns("/*");
-
-			return registrationBean;
-		}
-
-		@Bean
 		public ContentRestConfigurer restConfigurer() {
 			return new ContentRestConfigurer() {
 				@Override
@@ -63,17 +48,32 @@ public class ABACSpikeApplication {
 		}
 
 		@Bean
-		public QueryAugmentingABACAspect documentRepoAbacAspect(EntityManager em, PlatformTransactionManager ptm) {
+		public ABACRequestFilter abacFilter(Repositories repos, EntityManager em) {
+			return new ABACRequestFilter(repos, em);
+		}
+
+		@Bean
+		public FilterRegistrationBean<ABACRequestFilter> abacFilterRegistration(Repositories repos, EntityManager em){
+			FilterRegistrationBean<ABACRequestFilter> registrationBean = new FilterRegistrationBean<>();
+
+			registrationBean.setFilter(abacFilter(repos, em));
+			registrationBean.addUrlPatterns("/*");
+
+			return registrationBean;
+		}
+
+		@Bean
+		public QueryAugmentingABACAspect abacAspect(EntityManager em, PlatformTransactionManager ptm) {
 			return new QueryAugmentingABACAspect(em, ptm);
 		}
 	}
 
-	public static class RequestFilter implements Filter {
+	public static class ABACRequestFilter implements Filter {
 
 		private final Repositories repos;
 		private final EntityManager em;
 
-		public RequestFilter(Repositories repos, EntityManager em) {
+		public ABACRequestFilter(Repositories repos, EntityManager em) {
 			this.repos = repos;
 			this.em = em;
 		}
