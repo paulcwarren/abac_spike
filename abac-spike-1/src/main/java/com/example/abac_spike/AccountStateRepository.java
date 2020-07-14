@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface AccountStateRepository extends JpaRepository<AccountState, Long> {
 
-    List<AccountState> findByType(String type, Pageable pageable);
+    List<AccountState> findByType(@Param("type") String type, Pageable pageable);
 
     @Query("select d from AccountState d where d.type = :type")
     List<AccountState> byType(@Param("type") String type);

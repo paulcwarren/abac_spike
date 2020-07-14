@@ -1,6 +1,5 @@
 package com.example.abac_spike;
 
-import com.example.abac_spike.AbacSpikeApplication.EntityContext;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.PathBuilder;
@@ -55,7 +54,7 @@ public class QueryAugmentingAspect {
     @Around("execution(* org.springframework.data.repository.CrudRepository.findById(..))")
     public Object findById(ProceedingJoinPoint jp) throws Throwable {
 
-        String abacContext = AbacSpikeApplication.AbacContext.getCurrentAbacContext();
+        String abacContext = AbacContext.getCurrentAbacContext();
         if (abacContext == null) {
             return jp.proceed(jp.getArgs());
         }
@@ -84,7 +83,7 @@ public class QueryAugmentingAspect {
     @Around("execution(* org.springframework.data.repository.PagingAndSortingRepository.findAll(org.springframework.data.domain.Pageable))")
     public Object findAll(ProceedingJoinPoint jp) throws Throwable {
 
-        String abacContext = AbacSpikeApplication.AbacContext.getCurrentAbacContext();
+        String abacContext = AbacContext.getCurrentAbacContext();
         if (abacContext == null) {
             return jp.proceed(jp.getArgs());
         }
@@ -122,7 +121,7 @@ public class QueryAugmentingAspect {
     @Around("execution(* javax.persistence.EntityManager.createQuery(java.lang.String))")
     public Object createQueryFromString(ProceedingJoinPoint joinPoint) throws Throwable {
 
-        String abacContext = AbacSpikeApplication.AbacContext.getCurrentAbacContext();
+        String abacContext = AbacContext.getCurrentAbacContext();
         String[] abacContextFilterSpec = abacContext.split(" ");
 
         QueryAST ast = QueryAST.fromQueryString((String) joinPoint.getArgs()[0]);
@@ -145,7 +144,7 @@ public class QueryAugmentingAspect {
     @Before("execution(* javax.persistence.EntityManager.createQuery(javax.persistence.criteria.CriteriaQuery))")
     public void createQueryFromCriteriaQuery(JoinPoint joinPoint) {
 
-        String abacContext = AbacSpikeApplication.AbacContext.getCurrentAbacContext();
+        String abacContext = AbacContext.getCurrentAbacContext();
         String[] abacContextFilterSpec = abacContext.split(" ");
 
         Object o = null;
@@ -184,7 +183,7 @@ public class QueryAugmentingAspect {
     @Around("execution(* org.springframework.data.repository.CrudRepository.save(..))")
     public Object save(ProceedingJoinPoint jp) throws Throwable {
 
-        String abacContext = AbacSpikeApplication.AbacContext.getCurrentAbacContext();
+        String abacContext = AbacContext.getCurrentAbacContext();
         if (abacContext == null) {
             return jp.proceed(jp.getArgs());
         }
@@ -208,7 +207,7 @@ public class QueryAugmentingAspect {
     @Around("execution(* org.springframework.data.repository.CrudRepository.deleteById(..))")
     public void deleteById(ProceedingJoinPoint jp) throws Throwable {
 
-        String abacContext = AbacSpikeApplication.AbacContext.getCurrentAbacContext();
+        String abacContext = AbacContext.getCurrentAbacContext();
         if (abacContext == null) {
             jp.proceed(jp.getArgs());
         }
@@ -247,7 +246,7 @@ public class QueryAugmentingAspect {
     @Around("execution(* org.springframework.data.repository.CrudRepository.delete(..))")
     public void delete(ProceedingJoinPoint jp) throws Throwable {
 
-        String abacContext = AbacSpikeApplication.AbacContext.getCurrentAbacContext();
+        String abacContext = AbacContext.getCurrentAbacContext();
         if (abacContext == null) {
             jp.proceed(jp.getArgs());
         }

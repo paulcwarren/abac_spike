@@ -1,18 +1,14 @@
 package com.example.abac_spike;
 
 import internal.org.springframework.content.rest.utils.RepositoryUtils;
-import org.apache.batik.util.Platform;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.content.fs.config.FilesystemStoreConfigurer;
 import org.springframework.content.rest.config.ContentRestConfigurer;
 import org.springframework.content.rest.config.RestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.context.annotation.EnableLoadTimeWeaving;
-import org.springframework.core.convert.converter.ConverterRegistry;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.jpa.repository.support.JpaEntityInformationSupport;
 import org.springframework.data.repository.core.EntityInformation;
@@ -111,40 +107,6 @@ public class AbacSpikeApplication {
 
 			AbacContext.clear();
 			EntityContext.clear();
-		}
-	}
-
-	public static class EntityContext {
-
-		private static ThreadLocal<EntityInformation> currentEntityContext = new InheritableThreadLocal<>();
-
-		public static EntityInformation getCurrentEntityContext() {
-			return currentEntityContext.get();
-		}
-
-		public static void setCurrentEntityContext(EntityInformation ei) {
-			currentEntityContext.set(ei);
-		}
-
-		public static void clear() {
-			currentEntityContext.set(null);
-		}
-	}
-
-	public static class AbacContext {
-
-		private static ThreadLocal<String> currentAbacContext = new InheritableThreadLocal<>();
-
-		public static String getCurrentAbacContext() {
-			return currentAbacContext.get();
-		}
-
-		public static void setCurrentAbacContext(String tenant) {
-			currentAbacContext.set(tenant);
-		}
-
-		public static void clear() {
-			currentAbacContext.set(null);
 		}
 	}
 }

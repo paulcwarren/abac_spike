@@ -1,0 +1,18 @@
+<aspectj>
+
+    <weaver options="-verbose -showWeaveInfo">
+        <!--
+            Only weave classes in our application-specific packages.
+            This should encompass any class that wants to utilize the aspects,
+            and does not need to encompass the aspects themselves.
+        -->
+        <include within="org.springframework.data.repository.CrudRepository..*" />
+        <include within="javax.persistence.EntityManager..*" />
+    </weaver>
+
+    <aspects>
+        <!-- declare aspects to the weaver -->
+        <aspect name="com.example.abac_spike.QueryAugmentingAspect" />
+    </aspects>
+
+</aspectj>
