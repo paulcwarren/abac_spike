@@ -19,8 +19,6 @@ public class Broker {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-//    private String vat;
-//
     private String name;
 
     @OneToMany(mappedBy = "broker", cascade = CascadeType.ALL)
