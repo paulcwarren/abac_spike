@@ -39,14 +39,14 @@ import java.util.regex.Pattern;
 import static java.lang.String.format;
 
 @Aspect
-public class QueryAugmentingAspect {
+public class QueryAugmentingABACAspect {
 
     private static final String ID_MUST_NOT_BE_NULL = "The given id must not be null!";
 
     private final EntityManager em;
     private final PlatformTransactionManager ptm;
 
-    public QueryAugmentingAspect(EntityManager em, PlatformTransactionManager ptm) {
+    public QueryAugmentingABACAspect(EntityManager em, PlatformTransactionManager ptm) {
         this.em = em;
         this.ptm = ptm;
     }
@@ -54,7 +54,7 @@ public class QueryAugmentingAspect {
     @Around("execution(* org.springframework.data.repository.CrudRepository.findById(..))")
     public Object findById(ProceedingJoinPoint jp) throws Throwable {
 
-        String abacContext = AbacContext.getCurrentAbacContext();
+        String abacContext = ABACContext.getCurrentAbacContext();
         if (abacContext == null) {
             return jp.proceed(jp.getArgs());
         }
@@ -83,7 +83,7 @@ public class QueryAugmentingAspect {
     @Around("execution(* org.springframework.data.repository.PagingAndSortingRepository.findAll(org.springframework.data.domain.Pageable))")
     public Object findAll(ProceedingJoinPoint jp) throws Throwable {
 
-        String abacContext = AbacContext.getCurrentAbacContext();
+        String abacContext = ABACContext.getCurrentAbacContext();
         if (abacContext == null) {
             return jp.proceed(jp.getArgs());
         }
@@ -121,7 +121,7 @@ public class QueryAugmentingAspect {
     @Around("execution(* javax.persistence.EntityManager.createQuery(java.lang.String))")
     public Object createQueryFromString(ProceedingJoinPoint joinPoint) throws Throwable {
 
-        String abacContext = AbacContext.getCurrentAbacContext();
+        String abacContext = ABACContext.getCurrentAbacContext();
         String[] abacContextFilterSpec = abacContext.split(" ");
 
         QueryAST ast = QueryAST.fromQueryString((String) joinPoint.getArgs()[0]);
@@ -144,7 +144,7 @@ public class QueryAugmentingAspect {
     @Before("execution(* javax.persistence.EntityManager.createQuery(javax.persistence.criteria.CriteriaQuery))")
     public void createQueryFromCriteriaQuery(JoinPoint joinPoint) {
 
-        String abacContext = AbacContext.getCurrentAbacContext();
+        String abacContext = ABACContext.getCurrentAbacContext();
         String[] abacContextFilterSpec = abacContext.split(" ");
 
         Object o = null;
@@ -183,7 +183,7 @@ public class QueryAugmentingAspect {
     @Around("execution(* org.springframework.data.repository.CrudRepository.save(..))")
     public Object save(ProceedingJoinPoint jp) throws Throwable {
 
-        String abacContext = AbacContext.getCurrentAbacContext();
+        String abacContext = ABACContext.getCurrentAbacContext();
         if (abacContext == null) {
             return jp.proceed(jp.getArgs());
         }
@@ -207,7 +207,7 @@ public class QueryAugmentingAspect {
     @Around("execution(* org.springframework.data.repository.CrudRepository.deleteById(..))")
     public void deleteById(ProceedingJoinPoint jp) throws Throwable {
 
-        String abacContext = AbacContext.getCurrentAbacContext();
+        String abacContext = ABACContext.getCurrentAbacContext();
         if (abacContext == null) {
             jp.proceed(jp.getArgs());
         }
@@ -246,7 +246,7 @@ public class QueryAugmentingAspect {
     @Around("execution(* org.springframework.data.repository.CrudRepository.delete(..))")
     public void delete(ProceedingJoinPoint jp) throws Throwable {
 
-        String abacContext = AbacContext.getCurrentAbacContext();
+        String abacContext = ABACContext.getCurrentAbacContext();
         if (abacContext == null) {
             jp.proceed(jp.getArgs());
         }

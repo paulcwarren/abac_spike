@@ -28,8 +28,8 @@ import static org.hamcrest.Matchers.isIn;
 
 @RunWith(Ginkgo4jSpringRunner.class)
 @Ginkgo4jConfiguration(threads=1)
-@SpringBootTest(classes = {AbacSpikeApplication.class}, webEnvironment= SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class AbacSpikeApplicationTests {
+@SpringBootTest(classes = {ABACSpikeApplication.class}, webEnvironment= SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class ABACSpikeApplicationTests {
 
 	@LocalServerPort
 	int port;

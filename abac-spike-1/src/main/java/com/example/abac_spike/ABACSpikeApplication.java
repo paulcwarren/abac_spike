@@ -28,10 +28,10 @@ import static java.lang.String.format;
 @SpringBootApplication
 @EnableAspectJAutoProxy()
 @EnableJpaRepositories()
-public class AbacSpikeApplication {
+public class ABACSpikeApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(AbacSpikeApplication.class, args);
+		SpringApplication.run(ABACSpikeApplication.class, args);
 	}
 
 	@Configuration
@@ -63,8 +63,8 @@ public class AbacSpikeApplication {
 		}
 
 		@Bean
-		public QueryAugmentingAspect documentRepoAbacAspect(EntityManager em, PlatformTransactionManager ptm) {
-			return new QueryAugmentingAspect(em, ptm);
+		public QueryAugmentingABACAspect documentRepoAbacAspect(EntityManager em, PlatformTransactionManager ptm) {
+			return new QueryAugmentingABACAspect(em, ptm);
 		}
 	}
 
@@ -100,12 +100,12 @@ public class AbacSpikeApplication {
 
 			String tenantID = request.getHeader("X-ABAC-Context");
 			if (tenantID != null) {
-				AbacContext.setCurrentAbacContext(tenantID);
+				ABACContext.setCurrentAbacContext(tenantID);
 			}
 
 			filterChain.doFilter(servletRequest, servletResponse);
 
-			AbacContext.clear();
+			ABACContext.clear();
 			EntityContext.clear();
 		}
 	}

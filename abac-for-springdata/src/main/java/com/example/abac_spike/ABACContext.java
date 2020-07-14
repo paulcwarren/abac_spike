@@ -1,6 +1,6 @@
 package com.example.abac_spike;
 
-public class AbacContext {
+public class ABACContext {
 
     private static ThreadLocal<String> currentAbacContext = new InheritableThreadLocal<String>();
 
