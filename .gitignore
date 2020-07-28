@@ -2,6 +2,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/java,maven,gradle,eclipse,intellij+all
 # Edit at https://www.toptal.com/developers/gitignore?templates=java,maven,gradle,eclipse,intellij+all
 
+### Mac ###
+.DS_Store
+
 ### Eclipse ###
 .metadata
 bin/
@@ -14,6 +17,10 @@ local.properties
 .settings/
 .loadpath
 .recommenders
+.project
+.classpath
+**/.project
+**/.classpath
 
 # External tool builders
 .externalToolBuilders/
