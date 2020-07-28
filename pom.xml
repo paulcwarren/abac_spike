@@ -6,6 +6,8 @@
 	<groupId>com.example</groupId>
 	<artifactId>abac-spike-parent</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	
 
 	<name>abac-spike-1</name>
 	<description>Example project investigating query augmentation for ABAC</description>
