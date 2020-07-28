@@ -124,8 +124,8 @@ public class ABACSpikeApplicationTests {
 								.config(RestAssured.config()
 										.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
 								.header("X-ABAC-Context", format("broker.id = %sL", StringUtils.substringAfter(brokerFooUri, "/brokers/")))
-								.header("content-type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-								.body(IOUtils.toByteArray(this.getClass().getResourceAsStream("/sample-docx.docx")))
+								.header("content-type", "text/plain")
+								.body(IOUtils.toByteArray("foo doc 1"))
 								.post(tenantFooDoc1Content)
 								.then()
 								.statusCode(HttpStatus.SC_CREATED);
@@ -154,8 +154,8 @@ public class ABACSpikeApplicationTests {
 								.config(RestAssured.config()
 										.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
 								.header("X-ABAC-Context", format("broker.id = %sL", StringUtils.substringAfter(brokerBarUri, "/brokers/")))
-								.header("content-type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-								.body(IOUtils.toByteArray(this.getClass().getResourceAsStream("/sample-docx.docx")))
+								.header("content-type", "text/plain")
+								.body(IOUtils.toByteArray("bar doc 1"))
 								.post(tenantBarDoc1Content)
 								.then()
 								.statusCode(HttpStatus.SC_CREATED);
@@ -184,8 +184,8 @@ public class ABACSpikeApplicationTests {
 								.config(RestAssured.config()
 										.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
 								.header("X-ABAC-Context", format("broker.id = %sL", StringUtils.substringAfter(brokerFooUri, "/brokers/")))
-								.header("content-type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-								.body(IOUtils.toByteArray(this.getClass().getResourceAsStream("/sample-docx.docx")))
+								.header("content-type", "text/plain")
+								.body(IOUtils.toByteArray("foo doc 2"))
 								.post(tenantFooDoc2Content)
 								.then()
 								.statusCode(HttpStatus.SC_CREATED);
@@ -214,8 +214,8 @@ public class ABACSpikeApplicationTests {
 								.config(RestAssured.config()
 										.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
 								.header("X-ABAC-Context", format("broker.id = %sL", StringUtils.substringAfter(brokerFooUri, "/brokers/")))
-								.header("content-type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-								.body(IOUtils.toByteArray(this.getClass().getResourceAsStream("/sample-docx.docx")))
+								.header("content-type", "text/plain")
+								.body(IOUtils.toByteArray("foo doc 3"))
 								.post(tenantFooDoc3Content)
 								.then()
 								.statusCode(HttpStatus.SC_CREATED);
@@ -423,6 +423,42 @@ public class ABACSpikeApplicationTests {
 									.header("X-ABAC-Context", format("broker.id = %sL", StringUtils.substringAfter(brokerBarUri, "/brokers/")))
 									.header("Accept", "application/hal+json")
 									.delete(tenantFooDoc1)
+									.then()
+									.statusCode(HttpStatus.SC_NOT_FOUND);
+						});
+					});
+				});
+
+				Context("#content", () -> {
+
+					Context("when a broker gets content they own", () -> {
+
+						It("should succeed", () -> {
+
+							String body = given()
+									.config(RestAssured.config()
+											.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
+									.header("X-ABAC-Context", format("broker.id = %sL", StringUtils.substringAfter(brokerFooUri, "/brokers/")))
+									.header("Accept", "text/plain")
+									.get(tenantFooDoc1Content)
+									.then()
+									.statusCode(HttpStatus.SC_OK)
+									.extract().body().asString();
+
+							assertThat(body, is("foo doc 1"));
+						});
+					});
+
+					Context("when a broker gets content they do not own", () -> {
+
+						It("should fail with a 404", () -> {
+
+							given()
+									.config(RestAssured.config()
+											.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
+									.header("X-ABAC-Context", format("broker.id = %sL", StringUtils.substringAfter(brokerBarUri, "/brokers/")))
+									.header("Accept", "text/plain")
+									.put(tenantFooDoc1Content)
 									.then()
 									.statusCode(HttpStatus.SC_NOT_FOUND);
 						});
