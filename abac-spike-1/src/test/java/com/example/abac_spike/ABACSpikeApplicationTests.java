@@ -268,29 +268,6 @@ public class ABACSpikeApplicationTests {
 							}
 						});
 					});
-
-//				Context("when a findAll method is executed to get entities outside of all tenants", () -> {
-//
-//					BeforeEach(() -> {
-//						json = 	given()
-//								.config(RestAssured.config()
-//										.encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-//								.header("accept", "application/hal+json")
-//								.get("/otherDocuments/")
-//								.then()
-//								.statusCode(HttpStatus.SC_OK)
-//								.extract().jsonPath();
-//
-//					});
-//
-//					It("should only return results for other documents", () -> {
-//						int count = json.getList("_embedded.otherDocuments").size();
-//						for (int i=0; i < count; i++) {
-//							assertThat(json.getString(format("_embedded.otherDocuments[%s].type", i)), is("other"));
-//						}
-//					});
-//
-//				});
 				});
 
 				Context("#findBy methods", () -> {
