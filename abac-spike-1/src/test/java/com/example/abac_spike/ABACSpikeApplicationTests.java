@@ -1,9 +1,26 @@
 package com.example.abac_spike;
 
-import com.github.paulcwarren.ginkgo4j.Ginkgo4jConfiguration;
-import com.github.paulcwarren.ginkgo4j.Ginkgo4jSpringRunner;
-import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.path.json.JsonPath;
+import static com.github.paulcwarren.ginkgo4j.Ginkgo4jDSL.BeforeEach;
+import static com.github.paulcwarren.ginkgo4j.Ginkgo4jDSL.Context;
+import static com.github.paulcwarren.ginkgo4j.Ginkgo4jDSL.Describe;
+import static com.github.paulcwarren.ginkgo4j.Ginkgo4jDSL.It;
+import static com.jayway.restassured.RestAssured.given;
+import static com.jayway.restassured.config.EncoderConfig.encoderConfig;
+import static java.lang.String.format;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.isIn;
+
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.util.Optional;
+
+import javax.imageio.ImageIO;
+import javax.persistence.EntityManager;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
@@ -14,17 +31,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.context.ApplicationContext;
 
-import javax.persistence.EntityManager;
-import java.util.Optional;
-
-import static com.github.paulcwarren.ginkgo4j.Ginkgo4jDSL.*;
-import static com.jayway.restassured.RestAssured.given;
-import static com.jayway.restassured.config.EncoderConfig.encoderConfig;
-import static java.lang.String.format;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.isIn;
+import com.github.paulcwarren.ginkgo4j.Ginkgo4jConfiguration;
+import com.github.paulcwarren.ginkgo4j.Ginkgo4jSpringRunner;
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.path.json.JsonPath;
 
 @RunWith(Ginkgo4jSpringRunner.class)
 @Ginkgo4jConfiguration(threads=1)
@@ -441,6 +451,38 @@ public class ABACSpikeApplicationTests {
 						});
 					});
 				});
+
+                Context("#renditions", () -> {
+
+                    Context("when a broker gets a rendition of content they own", () -> {
+
+                        It("should succeed", () -> {
+
+                            byte[] body = given()
+                                    .config(RestAssured.config().encoderConfig(
+                                            encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
+                                    .header("X-ABAC-Context", format("broker.id = %sL", StringUtils.substringAfter(brokerFooUri, "/brokers/")))
+                                    .header("Accept", "image/jpeg").get(tenantFooDoc1Content).then()
+                                    .statusCode(HttpStatus.SC_OK).extract().body().asByteArray();
+
+                            ByteArrayInputStream bis = new ByteArrayInputStream(body);
+                            BufferedImage img = ImageIO.read(bis);
+                            assertThat(img, is(not(nullValue())));
+                        });
+                    });
+
+                    Context("when a broker gets content they do not own", () -> {
+
+                        It("should fail with a 404", () -> {
+
+                            given().config(RestAssured.config().encoderConfig(
+                                    encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
+                                    .header("X-ABAC-Context", format("broker.id = %sL", StringUtils.substringAfter(brokerBarUri, "/brokers/")))
+                                    .header("Accept", "image/jpeg").put(tenantFooDoc1Content).then()
+                                    .statusCode(HttpStatus.SC_NOT_FOUND);
+                        });
+                    });
+                });
 			});
 		});
 	}
