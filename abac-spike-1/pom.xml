@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>com.example</groupId>
 		<artifactId>abac-spike-parent</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 
 	<artifactId>abac-spike-1</artifactId>
@@ -70,6 +71,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>com.github.paulcwarren</groupId>
+			<artifactId>spring-versions-jpa-boot-starter</artifactId>
+			<version>1.1.0.M4-SNAPSHOT</version>
+		</dependency>
+
+		<dependency>
 			<groupId>com.example</groupId>
 			<artifactId>abac-for-springdata</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
@@ -88,18 +95,18 @@
 			<groupId>com.querydsl</groupId>
 			<artifactId>querydsl-jpa</artifactId>
 		</dependency>
-		
+
 		<dependency>
-		  <groupId>com.github.paulcwarren</groupId>
-		  <artifactId>spring-content-solr-boot-starter</artifactId>
-          <version>1.1.0.M4-SNAPSHOT</version>
+			<groupId>com.github.paulcwarren</groupId>
+			<artifactId>spring-content-solr-boot-starter</artifactId>
+			<version>1.1.0.M4-SNAPSHOT</version>
 		</dependency>
 
-        <dependency>
-          <groupId>com.github.paulcwarren</groupId>
-          <artifactId>spring-content-solr</artifactId>
-          <version>1.1.0.M4-SNAPSHOT</version>
-        </dependency>
+		<dependency>
+			<groupId>com.github.paulcwarren</groupId>
+			<artifactId>spring-content-solr</artifactId>
+			<version>1.1.0.M4-SNAPSHOT</version>
+		</dependency>
 
 		<dependency>
 			<groupId>junit</groupId>
@@ -133,7 +140,7 @@
 			<version>2.9.0</version>
 			<scope>test</scope>
 		</dependency>
-    </dependencies>
+	</dependencies>
 
 	<build>
 		<plugins>
