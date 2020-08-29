@@ -4,6 +4,8 @@ import static java.lang.String.format;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.persistence.EntityManager;
 import javax.servlet.Filter;
@@ -13,11 +15,16 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.content.rest.config.ContentRestConfigurer;
 import org.springframework.content.rest.config.RestConfiguration;
+import org.springframework.content.solr.AttributeProvider;
+import org.springframework.content.solr.FilterQueryProvider;
+import org.springframework.content.solr.SolrProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
@@ -40,6 +47,14 @@ public class ABACSpikeApplication {
 
     @Configuration
     public static class Config {
+
+        @Bean
+        public SolrClient solrClient(
+                SolrProperties props) {
+            props.setUser("solr");
+            props.setPassword("SolrRocks");
+            return new HttpSolrClient.Builder(props.getUrl()).build();
+        }
 
         @Bean
         public ContentRestConfigurer restConfigurer() {
@@ -69,6 +84,35 @@ public class ABACSpikeApplication {
         @Bean
         public QueryAugmentingABACAspect abacAspect(EntityManager em, PlatformTransactionManager ptm) {
             return new QueryAugmentingABACAspect(em, ptm);
+        }
+
+        @Bean
+        public AttributeProvider<AccountState> syncer() {
+            return new AttributeProvider<AccountState>() {
+
+                @Override
+                public Map<String, String> synchronize(AccountState entity) {
+                    Map<String,String> attrs = new HashMap<>();
+                    attrs.put("broker.id", entity.getBroker().getId().toString());
+                    return attrs;
+                }
+            };
+        }
+
+        @Bean
+        public FilterQueryProvider fqProvider() {
+            return new FilterQueryProvider() {
+
+                @Override
+                public String[] filterQueries(Class<?> entity) {
+
+                    String abacContext = ABACContext.getCurrentAbacContext();
+                    String fq = abacContext.replace(".", "_");
+                    fq = fq.replace("=", ":");
+                    fq = fq.replace(" ", "");
+                    return new String[] {fq.replaceFirst("L$", "")};
+                }
+            };
         }
     }
 

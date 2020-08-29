@@ -11,11 +11,13 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.isIn;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.util.List;
 import java.util.Optional;
 
 import javax.imageio.ImageIO;
@@ -680,8 +682,34 @@ public class ABACSpikeApplicationTests {
                             .get("/accountStates/"
                                     + doc
                                     .getId())
-                            .then()
-                            .statusCode(HttpStatus.SC_NOT_FOUND);
+                            .then().statusCode(HttpStatus.SC_NOT_FOUND);
+                        });
+                    });
+                });
+
+                Context("#fulltext", () -> {
+
+                    Context("when a broker performs a search", () -> {
+
+                        It("should only return documents they own", () -> {
+
+                            JsonPath results = given()
+                                    .config(RestAssured.config()
+                                            .encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
+                                    .header("X-ABAC-Context", format("broker.id = %sL", StringUtils.substringAfter(brokerFooUri, "/brokers/")))
+                                    .header("Accept", "application/hal+json")
+                                    .get(searchContentEndpoint(tenantFooDoc1, "doc"))
+                                    .then()
+                                    .statusCode(HttpStatus.SC_OK)
+                                    .extract().jsonPath();
+
+                            List<String> links = results.get("_embedded.accountStates._links.self.href");
+                            assertThat(links.size(), is(greaterThan(0)));
+                            for (String link : links) {
+                                Optional<AccountState> accountState = repo.findById(Long.parseLong(StringUtils.substringAfterLast(link, "/")));
+                                assertThat(accountState.isPresent(), is(true));
+                                assertThat(accountState.get().getBroker().getId(), is(Long.parseLong(StringUtils.substringAfter(brokerFooUri, "/brokers/"))));
+                            }
                         });
                     });
                 });
@@ -691,5 +719,9 @@ public class ABACSpikeApplicationTests {
 
     @Test
     public void noop() {
+    }
+
+    private static String searchContentEndpoint(String entityEndpoint, String queryString) {
+        return StringUtils.substringBeforeLast(entityEndpoint, "/") + "/searchContent?queryString=" + queryString;
     }
 }
