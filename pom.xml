@@ -9,7 +9,7 @@
 	<packaging>pom</packaging>
 	
 
-	<name>abac-spike-1</name>
+	<name>abac-spike-parent</name>
 	<description>Example project investigating query augmentation for ABAC</description>
 
 	<properties>

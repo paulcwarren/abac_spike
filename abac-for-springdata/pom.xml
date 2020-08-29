@@ -6,7 +6,7 @@
 		<groupId>com.example</groupId>
 		<artifactId>abac-spike-parent</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
-		<relativePath/> <!-- lookup parent from repository -->
+        <relativePath>../</relativePath>
 	</parent>
 
 	<artifactId>abac-for-springdata</artifactId>
