@@ -1,7 +1,3 @@
-# Branches
-
-abac-with-aspects-wip; default branch
-
 # How to run
 
 1. `git clone https://github.com/paulcwarren/abac_spike_1`
