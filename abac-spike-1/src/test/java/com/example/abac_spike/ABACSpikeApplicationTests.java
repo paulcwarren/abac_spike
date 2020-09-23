@@ -1,5 +1,6 @@
 package com.example.abac_spike;
 
+import static com.github.paulcwarren.ginkgo4j.Ginkgo4jDSL.AfterEach;
 import static com.github.paulcwarren.ginkgo4j.Ginkgo4jDSL.BeforeEach;
 import static com.github.paulcwarren.ginkgo4j.Ginkgo4jDSL.Context;
 import static com.github.paulcwarren.ginkgo4j.Ginkgo4jDSL.Describe;
@@ -27,6 +28,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.apache.http.auth.BasicUserPrincipal;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +68,9 @@ public class ABACSpikeApplicationTests {
 
     @Autowired
     private AccountStateStore store;
+
+    @Autowired
+    private SolrClient solr;
 
     private AccountState doc;
 
@@ -298,6 +304,16 @@ public class ABACSpikeApplicationTests {
                         .post("/otherDocuments/")
                         .then()
                         .statusCode(HttpStatus.SC_CREATED);
+                    }
+                });
+
+                AfterEach(() -> {
+                    if (solr != null) {
+                        UpdateRequest req = new UpdateRequest();
+                        req.deleteByQuery("*");
+                        req.setBasicAuthCredentials("solr", "SolrRocks");
+                        req.process(solr, null);
+                        req.commit(solr, null);
                     }
                 });
 
