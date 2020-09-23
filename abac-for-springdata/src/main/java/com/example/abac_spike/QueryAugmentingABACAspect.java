@@ -108,8 +108,10 @@ public class QueryAugmentingABACAspect {
             q.where(abacExpr);
         }
 
-        q.offset(pageable.getOffset());
-        q.limit(pageable.getPageSize());
+        if (pageable.isPaged()) {
+            q.offset(pageable.getOffset());
+            q.limit(pageable.getPageSize());
+        }
         if (pageable.getSort().isSorted()) {
             for (int i = 0; i < pageable.getSort().toList().size(); i++) {
                 Sort.Order order = pageable.getSort().toList().get(i);
