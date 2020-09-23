@@ -1,13 +1,21 @@
 package com.example.abac_spike;
 
-import com.querydsl.core.QueryResults;
-import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.PathBuilder;
-import com.querydsl.jpa.impl.JPADeleteClause;
-import com.querydsl.jpa.impl.JPAQuery;
-import com.querydsl.jpa.impl.JPAQueryFactory;
-import lombok.Getter;
-import lombok.Setter;
+import static java.lang.String.format;
+
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.Field;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.persistence.EntityManager;
+import javax.persistence.Id;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.From;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -27,16 +35,15 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.util.Assert;
 
-import javax.persistence.EntityManager;
-import javax.persistence.Id;
-import javax.persistence.criteria.*;
-import java.beans.PropertyDescriptor;
-import java.lang.reflect.Field;
-import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.querydsl.core.QueryResults;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.PathBuilder;
+import com.querydsl.jpa.impl.JPADeleteClause;
+import com.querydsl.jpa.impl.JPAQuery;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 
-import static java.lang.String.format;
+import lombok.Getter;
+import lombok.Setter;
 
 @Aspect
 public class QueryAugmentingABACAspect {
@@ -351,6 +358,7 @@ public class QueryAugmentingABACAspect {
     private static class QueryAST {
 
         private String query;
+        private String attrs;
         private String type;
         private String alias;
         private String where;
@@ -358,10 +366,14 @@ public class QueryAugmentingABACAspect {
 
         private QueryAST() {}
 
+        @Override
         public String toString() {
             StringBuilder builder = new StringBuilder();
             builder.append(query);
             builder.append('\n');
+            if (attrs != null) {
+                builder.append(attrs + " ");
+            }
             builder.append("from ");
             builder.append(type);
             builder.append(" ");
@@ -382,11 +394,13 @@ public class QueryAugmentingABACAspect {
 
             QueryAST ast = new QueryAST();
 
-            Pattern pattern = Pattern.compile("^(?<query>select.*|delete)(\\\\n|\\s)from(\\\\n|\\s)(?<type>.*?)\\s(?<alias>.*)\\swhere(\\\\n|\\s)(?<where>.*?)(\\\\n|\\s)?(order by (?<orderby>.*))?$");
+            Pattern pattern = Pattern.compile("^(?<query>select|delete)(?<attrs>.*)(\\s)from(\\s)(?<type>.*?)\\s(?<alias>.*)\\swhere(\\s)(?<where>.*?)(\\s)?(order by (?<orderby>.*))?$");
+
             Matcher matcher = pattern.matcher(query);
 
             if (matcher.find()) {
                 ast.setQuery(matcher.group("query"));
+                ast.setAttrs(matcher.group("attrs"));
                 ast.setType(matcher.group("type"));
                 ast.setAlias(matcher.group("alias"));
                 ast.setWhere(matcher.group("where"));
