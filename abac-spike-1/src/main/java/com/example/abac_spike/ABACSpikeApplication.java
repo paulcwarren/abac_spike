@@ -4,8 +4,11 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.content.rest.config.ContentRestConfigurer;
@@ -16,6 +19,7 @@ import org.springframework.content.solr.SolrProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.web.context.annotation.RequestScope;
 
 @SpringBootApplication
 @EnableAspectJAutoProxy()
@@ -61,8 +65,11 @@ public class ABACSpikeApplication {
         }
 
         @Bean
+        @RequestScope
         public FilterQueryProvider fqProvider() {
             return new FilterQueryProvider() {
+
+                private @Autowired HttpServletRequest request;
 
                 @Override
                 public String[] filterQueries(Class<?> entity) {

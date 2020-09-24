@@ -430,8 +430,6 @@ public class ABACSpikeApplicationTests {
                                     .getList("_embedded.accountStates")
                                     .size();
                             for (int i = 0; i < count; i++) {
-                                // assertThat(json.getString(format("_embedded.accountStates[%s].brokerId",
-                                // i)), is("foo"));
                                 assertThat(json
                                         .getString(format("_embedded.accountStates[%s].name", i)), is(isIn(new String[] {
                                                 "aaa",

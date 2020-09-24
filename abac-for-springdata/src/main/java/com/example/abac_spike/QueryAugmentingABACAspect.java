@@ -37,6 +37,8 @@ import org.springframework.util.Assert;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.ComparablePath;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.impl.JPADeleteClause;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -136,7 +138,7 @@ public class QueryAugmentingABACAspect {
         QueryAST ast = QueryAST.fromQueryString((String) joinPoint.getArgs()[0]);
 
         if (ast.getWhere() == null) {
-            ast.setWhere(parseFilterSpec(abacContextFilterSpec, ast.getAlias()));
+           ast.setWhere(parseFilterSpec(abacContextFilterSpec, ast.getAlias()));
         } else {
             Pattern pattern = Pattern.compile("^.*(?<field>" + abacContextFilterSpec[0] + ").*$");
             Matcher matcher = pattern.matcher(ast.getWhere());
@@ -326,9 +328,9 @@ public class QueryAugmentingABACAspect {
 
     BooleanExpression abacExpr(String[] abacContextFilterSpec, PathBuilder entityPath) {
         BooleanExpression abacExpr = null;
-        PathBuilder abacPath = entityPath.get(abacContextFilterSpec[0], typeFromConstant(abacContextFilterSpec[2]));
-        if (abacContextFilterSpec[1].equals("=")) {
-            abacExpr = abacPath.eq(typedValueFromConstant(abacContextFilterSpec[2]));
+        ComparablePath abacPath = entityPath.getComparable(abacContextFilterSpec[0], typeFromConstant(abacContextFilterSpec[2]));
+        if (abacContextFilterSpec[1].equals(">")) {
+            abacExpr = abacPath.eq(Expressions.constant(typedValueFromConstant(abacContextFilterSpec[2])));
         }
         return abacExpr;
     }
@@ -357,7 +359,7 @@ public class QueryAugmentingABACAspect {
 
     @Getter
     @Setter
-    private static class QueryAST {
+    static class QueryAST {
 
         private String query;
         private String attrs;
@@ -372,44 +374,97 @@ public class QueryAugmentingABACAspect {
         public String toString() {
             StringBuilder builder = new StringBuilder();
             builder.append(query);
-            builder.append('\n');
+            builder.append(" ");
             if (attrs != null) {
-                builder.append(attrs + " ");
+                builder.append(attrs);
+                builder.append(" ");
             }
             builder.append("from ");
             builder.append(type);
             builder.append(" ");
-            builder.append(alias);
-            builder.append('\n');
+            if (alias != null) {
+                builder.append(alias);
+                builder.append(" ");
+            }
             if (this.getWhere() != null) {
                 builder.append("where ");
                 builder.append(where);
+                builder.append(" ");
             }
             if (this.getOrderBy() != null) {
                 builder.append("order by ");
                 builder.append(orderBy);
             }
-            return builder.toString();
+            return builder.toString().trim();
         }
 
         public static QueryAST fromQueryString(String query) {
 
             QueryAST ast = new QueryAST();
 
-            Pattern pattern = Pattern.compile("^(?<query>select|delete)(?<attrs>.*)(\\s)from(\\s)(?<type>.*?)\\s(?<alias>.*)\\swhere(\\s)(?<where>.*?)(\\s)?(order by (?<orderby>.*))?$");
+            int token_type = QUERY;
+            String[] tokens = query.split(" |\\n");
+            for (int i=0; i < tokens.length; i++) {
 
-            Matcher matcher = pattern.matcher(query);
+                String token = tokens[i];
 
-            if (matcher.find()) {
-                ast.setQuery(matcher.group("query"));
-                ast.setAttrs(matcher.group("attrs"));
-                ast.setType(matcher.group("type"));
-                ast.setAlias(matcher.group("alias"));
-                ast.setWhere(matcher.group("where"));
-                ast.setOrderBy(matcher.group("orderby"));
+                switch (token_type) {
+                    case QUERY:
+                        ast.setQuery(token);
+                        token_type = ATTRS_OR_FROM;
+                        break;
+                    case ATTRS_OR_FROM:
+                        if (token.equals("from")) {
+                            token_type = TYPE;
+                        } else {
+                            ast.setAttrs(token);
+                        }
+                        break;
+                    case TYPE:
+                        ast.setType(token);
+                        token_type = ALIAS_OR_WHERE_OR_ORDERBY;
+                        break;
+                    case ALIAS_OR_WHERE_OR_ORDERBY:
+                        if (token.equals("where")) {
+                            token_type = WHERE;
+                        } else if (token.equals("order")) {
+                            token_type = ORDERBY;
+                        } else {
+                            ast.setAlias(token);
+                        }
+                        break;
+                    case WHERE:
+                        String where = "";
+                        do {
+                            where = where + tokens[i] + " ";
+                            i++;
+                        } while (i < tokens.length && !tokens[i].equals("order"));
+                        ast.setWhere(where.trim());
+                        token_type = ORDERBY;
+                        break;
+                    case ORDERBY:
+                        String orderby = "";
+
+                        while (tokens[i].equals("order") || tokens[i].equals("by")) {
+                            i++;  // skip
+                        }
+                        do {
+                            orderby = orderby + tokens[i] + " ";
+                            i++;
+                        } while (i < tokens.length);
+                        ast.setOrderBy(orderby.trim());
+                        break;
+                }
             }
 
             return ast;
         }
+
+        static final int QUERY = 0;
+        static final int ATTRS_OR_FROM = 1;
+        static final int TYPE = 2;
+        static final int ALIAS_OR_WHERE_OR_ORDERBY = 3;
+        static final int WHERE = 4;
+        static final int ORDERBY = 5;
     }
 }
