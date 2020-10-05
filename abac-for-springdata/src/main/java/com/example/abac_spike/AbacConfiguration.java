@@ -3,6 +3,7 @@ package com.example.abac_spike;
 import static java.lang.String.format;
 
 import java.io.IOException;
+import java.util.Base64;
 
 import javax.persistence.EntityManager;
 import javax.servlet.Filter;
@@ -12,6 +13,9 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
+import be.heydari.lib.converters.protobuf.ProtobufUtils;
+import be.heydari.lib.converters.protobuf.generated.PDisjunction;
+import be.heydari.lib.expressions.Disjunction;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -80,9 +84,13 @@ public class AbacConfiguration {
                 EntityContext.setCurrentEntityContext(ei);
             }
 
-            String tenantID = request.getHeader("X-ABAC-Context");
-            if (tenantID != null) {
-                ABACContext.setCurrentAbacContext(tenantID);
+            // Emad
+            String abacContext = request.getHeader("X-ABAC-Context");
+            if (abacContext != null) {
+                byte[] abacContextProtobytes = Base64.getDecoder().decode(abacContext);
+                PDisjunction pDisjunction = PDisjunction.newBuilder().mergeFrom(abacContextProtobytes).build();
+                Disjunction disjunction = ProtobufUtils.to(pDisjunction, "");
+                ABACContext.setCurrentAbacContext(disjunction);
             }
 
             filterChain.doFilter(servletRequest, servletResponse);

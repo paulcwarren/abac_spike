@@ -16,6 +16,9 @@ import javax.persistence.criteria.From;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
+import be.heydari.lib.converters.jpql.JPQLUtils;
+import be.heydari.lib.converters.querydsl.QueryDslUtils;
+import be.heydari.lib.expressions.Disjunction;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -62,8 +65,8 @@ public class QueryAugmentingABACAspect {
 
     @Around("execution(* org.springframework.data.repository.CrudRepository.findById(..))")
     public Object findById(ProceedingJoinPoint jp) throws Throwable {
-
-        String abacContext = ABACContext.getCurrentAbacContext();
+        // Emad
+        Disjunction abacContext = ABACContext.getCurrentAbacContext();
         if (abacContext == null) {
             return jp.proceed(jp.getArgs());
         }
@@ -73,10 +76,13 @@ public class QueryAugmentingABACAspect {
 
         PathBuilder entityPath = new PathBuilder(EntityContext.getCurrentEntityContext().getJavaType(), "entity");
 
-        String[] abacContextFilterSpec = abacContext.split(" ");
+        //String[] abacContextFilterSpec = abacContext.split(" ");
 
         BooleanExpression idExpr = idExpr(id, entityPath);
-        BooleanExpression abacExpr = abacExpr(abacContextFilterSpec, entityPath);
+        // Emad
+        //BooleanExpression abacExpr = abacExpr(abacContextFilterSpec, entityPath);
+        BooleanExpression abacExpr = QueryDslUtils.from(abacContext,entityPath,EntityContext.getCurrentEntityContext().getJavaType());
+
 
         idExpr = idExpr.and(abacExpr);
 
@@ -92,7 +98,8 @@ public class QueryAugmentingABACAspect {
     @Around("execution(* org.springframework.data.repository.PagingAndSortingRepository.findAll(org.springframework.data.domain.Pageable))")
     public Object findAll(ProceedingJoinPoint jp) throws Throwable {
 
-        String abacContext = ABACContext.getCurrentAbacContext();
+        // Emad
+        Disjunction abacContext = ABACContext.getCurrentAbacContext();
         if (abacContext == null) {
             return jp.proceed(jp.getArgs());
         }
@@ -102,7 +109,9 @@ public class QueryAugmentingABACAspect {
         Pageable pageable = (Pageable) jp.getArgs()[0];
         PathBuilder entityPath = new PathBuilder(EntityContext.getCurrentEntityContext().getJavaType(), "entity");
 
-        abacExpr = abacExpr(abacContext.split(" "), entityPath);
+        // Emad
+        // abacExpr = abacExpr(abacContext.split(" "), entityPath);
+        abacExpr = QueryDslUtils.from(abacContext, entityPath, EntityContext.getCurrentEntityContext().getJavaType());
 
         JPAQueryFactory queryFactory = new JPAQueryFactory(em);
         JPAQuery q = queryFactory.selectFrom(entityPath);
@@ -132,11 +141,18 @@ public class QueryAugmentingABACAspect {
     @Around("execution(* javax.persistence.EntityManager.createQuery(java.lang.String))")
     public Object createQueryFromString(ProceedingJoinPoint joinPoint) throws Throwable {
 
-        String abacContext = ABACContext.getCurrentAbacContext();
-        String[] abacContextFilterSpec = abacContext.split(" ");
+        // Emad
+        Disjunction abacContext = ABACContext.getCurrentAbacContext();
+        //String[] abacContextFilterSpec = abacContext.split(" ");
 
         QueryAST ast = QueryAST.fromQueryString((String) joinPoint.getArgs()[0]);
+        // Emad
+        if (abacContext != null) {
+            String abacContextFilterSpec = JPQLUtils.from(abacContext, ast.getAlias());
+            ast.setWhere(abacContextFilterSpec);
+        }
 
+        /*
         if (ast.getWhere() == null) {
            ast.setWhere(parseFilterSpec(abacContextFilterSpec, ast.getAlias()));
         } else {
@@ -147,7 +163,7 @@ public class QueryAugmentingABACAspect {
             if (!matcher.find()) {
                 ast.setWhere(format("%s and %s", ast.getWhere(), parseFilterSpec(abacContextFilterSpec, ast.getAlias())));
             }
-        }
+        }*/
 
         return joinPoint.proceed(new String[]{ast.toString()});
     }
@@ -155,8 +171,9 @@ public class QueryAugmentingABACAspect {
     @Before("execution(* javax.persistence.EntityManager.createQuery(javax.persistence.criteria.CriteriaQuery))")
     public void createQueryFromCriteriaQuery(JoinPoint joinPoint) {
 
-        String abacContext = ABACContext.getCurrentAbacContext();
-        String[] abacContextFilterSpec = abacContext.split(" ");
+        // Emad
+        Disjunction abacContext = ABACContext.getCurrentAbacContext();
+        //String[] abacContextFilterSpec = abacContext.split(" ");
 
         Object o = null;
         try {
