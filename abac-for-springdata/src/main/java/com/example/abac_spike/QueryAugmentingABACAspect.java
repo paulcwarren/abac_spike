@@ -16,9 +16,11 @@ import javax.persistence.criteria.From;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
+import be.heydari.lib.converters.criteriaquery.CriteriaQueryUtils;
 import be.heydari.lib.converters.jpql.JPQLUtils;
 import be.heydari.lib.converters.querydsl.QueryDslUtils;
 import be.heydari.lib.expressions.Disjunction;
+import com.querydsl.core.types.dsl.*;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -39,10 +41,6 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.util.Assert;
 
 import com.querydsl.core.QueryResults;
-import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.ComparablePath;
-import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.impl.JPADeleteClause;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -83,7 +81,7 @@ public class QueryAugmentingABACAspect {
         //BooleanExpression abacExpr = abacExpr(abacContextFilterSpec, entityPath);
         BooleanExpression abacExpr = QueryDslUtils.from(abacContext,entityPath,EntityContext.getCurrentEntityContext().getJavaType());
 
-
+        // todo: adding L to the broker ID
         idExpr = idExpr.and(abacExpr);
 
         JPAQueryFactory queryFactory = new JPAQueryFactory(em);
@@ -144,7 +142,7 @@ public class QueryAugmentingABACAspect {
         // Emad
         Disjunction abacContext = ABACContext.getCurrentAbacContext();
         //String[] abacContextFilterSpec = abacContext.split(" ");
-
+        // todo: 2 cases
         QueryAST ast = QueryAST.fromQueryString((String) joinPoint.getArgs()[0]);
         // Emad
         if (abacContext != null) {
@@ -184,7 +182,9 @@ public class QueryAugmentingABACAspect {
             CriteriaBuilder cb = ((EntityManager) joinPoint.getTarget()).getCriteriaBuilder();
             Root<?> r = (Root<?>) cq.getRoots().toArray()[0];
 
-            Predicate abacPredicate = null;
+            // Emad
+            Predicate abacPredicate = CriteriaQueryUtils.from(abacContext, r, cb);
+            /*Predicate abacPredicate = null;
             if (abacContextFilterSpec[1].equals("=")) {
 
                 String[] pathSegments = abacContextFilterSpec[0].split("\\.");
@@ -196,6 +196,7 @@ public class QueryAugmentingABACAspect {
 
                 abacPredicate = cb.equal(f.get(pathSegments[pathSegments.length - 1]), typedValueFromConstant(abacContextFilterSpec[2]));
             }
+            */
 
             Predicate newWherePredicate = existingPredicate;
             if (abacPredicate != null) {
@@ -210,12 +211,12 @@ public class QueryAugmentingABACAspect {
 
     @Around("execution(* org.springframework.data.repository.CrudRepository.save(..))")
     public Object save(ProceedingJoinPoint jp) throws Throwable {
-
-        String abacContext = ABACContext.getCurrentAbacContext();
+        // Todo: no ABAC enforcement for the moment
+        Disjunction abacContext = ABACContext.getCurrentAbacContext();
         if (abacContext == null) {
             return jp.proceed(jp.getArgs());
         }
-
+        /*
         EntityInformation ei = EntityContext.getCurrentEntityContext();
 
         String[] abacContextFilterSpec = null;
@@ -224,18 +225,20 @@ public class QueryAugmentingABACAspect {
         Object entity = jp.getArgs()[0];
 
         if (ei.isNew(entity)) {
+            // todo
             setAbacAttributes(entity, abacContextFilterSpec);
         } else {
             enforceAbacAttributes(entity, abacContextFilterSpec);
         }
-
+        */
         return jp.proceed();
     }
 
     @Around("execution(* org.springframework.data.repository.CrudRepository.deleteById(..))")
     public void deleteById(ProceedingJoinPoint jp) throws Throwable {
 
-        String abacContext = ABACContext.getCurrentAbacContext();
+        // Emad
+        Disjunction abacContext = ABACContext.getCurrentAbacContext();
         if (abacContext == null) {
             jp.proceed(jp.getArgs());
         }
@@ -245,10 +248,13 @@ public class QueryAugmentingABACAspect {
 
         PathBuilder entityPath = new PathBuilder(EntityContext.getCurrentEntityContext().getJavaType(), "entity");
 
-        String[] abacContextFilterSpec = abacContext.split(" ");
+        // Emad
+        //String[] abacContextFilterSpec = abacContext.split(" ");
 
         BooleanExpression idExpr = idExpr(id, entityPath);
-        BooleanExpression abacExpr = abacExpr(abacContextFilterSpec, entityPath);
+        // Emad
+        //BooleanExpression abacExpr = abacExpr(abacContextFilterSpec, entityPath);
+        BooleanExpression abacExpr = QueryDslUtils.from(abacContext, entityPath, EntityContext.getCurrentEntityContext().getJavaType());
         if (abacExpr != null) {
             idExpr = idExpr.and(abacExpr);
         }
@@ -273,8 +279,9 @@ public class QueryAugmentingABACAspect {
 
     @Around("execution(* org.springframework.data.repository.CrudRepository.delete(..))")
     public void delete(ProceedingJoinPoint jp) throws Throwable {
-
-        String abacContext = ABACContext.getCurrentAbacContext();
+        // Todo: no ABAC enforcement for the moment
+        // Emad
+        Disjunction abacContext = ABACContext.getCurrentAbacContext();
         if (abacContext == null) {
             jp.proceed(jp.getArgs());
         }
@@ -288,7 +295,9 @@ public class QueryAugmentingABACAspect {
             return;
         }
 
-        enforceAbacAttributes(entity, abacContext.split(" "));
+        // Emad
+        // Todo: no ABAC enforcement for the moment
+        //enforceAbacAttributes(entity, abacContext.split(" "));
 
         jp.proceed();
     }
@@ -356,6 +365,7 @@ public class QueryAugmentingABACAspect {
 
         BeanWrapper wrapper = new BeanWrapperImpl(entity);
         try {
+            // todo
             PropertyDescriptor descriptor = wrapper.getPropertyDescriptor(abacContextFilterSpec[0]);
             descriptor.setValue(abacContextFilterSpec[0], abacContextFilterSpec[2]);
         } catch (InvalidPropertyException ipe) {}

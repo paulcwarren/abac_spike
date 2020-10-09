@@ -33,6 +33,13 @@
 			<artifactId>abac-lib</artifactId>
 			<version>1.0-SNAPSHOT</version>
 		</dependency>
+		<!-- Emad (for testing) -->
+		<dependency>
+			<groupId>be.heydari</groupId>
+			<artifactId>rego-java</artifactId>
+			<version>1.0-SNAPSHOT</version>
+			<scope>test</scope>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

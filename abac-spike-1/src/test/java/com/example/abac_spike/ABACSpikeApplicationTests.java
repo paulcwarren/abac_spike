@@ -18,12 +18,22 @@ import static org.hamcrest.Matchers.isIn;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.util.List;
-import java.util.Optional;
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.*;
 
 import javax.imageio.ImageIO;
 import javax.persistence.EntityManager;
 
+import be.heydari.AstWalker;
+import be.heydari.lib.converters.protobuf.ProtobufUtils;
+import be.heydari.lib.converters.protobuf.generated.PDisjunction;
+import be.heydari.lib.expressions.Disjunction;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Builder;
+import lombok.Data;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
@@ -44,6 +54,7 @@ import com.github.paulcwarren.ginkgo4j.Ginkgo4jConfiguration;
 import com.github.paulcwarren.ginkgo4j.Ginkgo4jSpringRunner;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.path.json.JsonPath;
+import org.springframework.web.client.RestTemplate;
 
 @RunWith(Ginkgo4jSpringRunner.class)
 @Ginkgo4jConfiguration(threads = 1)
@@ -129,8 +140,10 @@ public class ABACSpikeApplicationTests {
                     // add account statements owned by brokers' broker ID
                     {
                         json = given()
-                                .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                        .substringAfter(brokerFooUri, "/brokers/")))
+                                /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                        .substringAfter(brokerFooUri, "/brokers/")))*/
+                                .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                                .substringAfter(brokerFooUri, "/brokers/"))))
                                 .header("content-type", "application/hal+json")
                                 .body("{\"name\":\"zzz\",\"type\":\"sop_document\"}")
                                 .post("/accountStates/")
@@ -159,8 +172,10 @@ public class ABACSpikeApplicationTests {
                                 .config()
                                 .encoderConfig(encoderConfig()
                                         .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                        .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                .substringAfter(brokerFooUri, "/brokers/")))
+                        /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                .substringAfter(brokerFooUri, "/brokers/")))*/
+                        .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                .substringAfter(brokerFooUri, "/brokers/"))))
                         .header("content-type", "text/plain")
                         .body(IOUtils
                                 .toByteArray("foo doc 1"))
@@ -169,8 +184,10 @@ public class ABACSpikeApplicationTests {
                         .statusCode(HttpStatus.SC_CREATED);
 
                         json = given()
-                                .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                        .substringAfter(brokerBarUri, "/brokers/")))
+                                /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                        .substringAfter(brokerBarUri, "/brokers/")))*/
+                                .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                        .substringAfter(brokerBarUri, "/brokers/"))))
                                 .header("content-type", "application/hal+json")
                                 .body("{\"name\":\"www\",\"type\":\"sop_document\"}")
                                 .post("/accountStates/")
@@ -199,8 +216,10 @@ public class ABACSpikeApplicationTests {
                                 .config()
                                 .encoderConfig(encoderConfig()
                                         .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                        .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                .substringAfter(brokerBarUri, "/brokers/")))
+                        /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                .substringAfter(brokerBarUri, "/brokers/")))*/
+                        .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                .substringAfter(brokerBarUri, "/brokers/"))))
                         .header("content-type", "text/plain")
                         .body(IOUtils
                                 .toByteArray("bar doc 1"))
@@ -209,8 +228,10 @@ public class ABACSpikeApplicationTests {
                         .statusCode(HttpStatus.SC_CREATED);
 
                         json = given()
-                                .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                        .substringAfter(brokerFooUri, "/brokers/")))
+                                /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                        .substringAfter(brokerFooUri, "/brokers/")))*/
+                                .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                        .substringAfter(brokerFooUri, "/brokers/"))))
                                 .header("content-type", "application/hal+json")
                                 .body("{\"name\":\"ppp\",\"type\":\"sop_document\"}")
                                 .post("/accountStates/")
@@ -239,8 +260,10 @@ public class ABACSpikeApplicationTests {
                                 .config()
                                 .encoderConfig(encoderConfig()
                                         .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                        .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                .substringAfter(brokerFooUri, "/brokers/")))
+                        /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                .substringAfter(brokerFooUri, "/brokers/")))*/
+                        .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                .substringAfter(brokerFooUri, "/brokers/"))))
                         .header("content-type", "text/plain")
                         .body(IOUtils
                                 .toByteArray("foo doc 2"))
@@ -249,8 +272,10 @@ public class ABACSpikeApplicationTests {
                         .statusCode(HttpStatus.SC_CREATED);
 
                         json = given()
-                                .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                        .substringAfter(brokerFooUri, "/brokers/")))
+                                /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                        .substringAfter(brokerFooUri, "/brokers/")))*/
+                                .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                        .substringAfter(brokerFooUri, "/brokers/"))))
                                 .header("content-type", "application/hal+json")
                                 .body("{\"name\":\"aaa\",\"type\":\"sop_document\"}")
                                 .post("/accountStates/")
@@ -279,8 +304,10 @@ public class ABACSpikeApplicationTests {
                                 .config()
                                 .encoderConfig(encoderConfig()
                                         .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                        .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                .substringAfter(brokerFooUri, "/brokers/")))
+                        /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                .substringAfter(brokerFooUri, "/brokers/")))*/
+                        .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                .substringAfter(brokerFooUri, "/brokers/"))))
                         .header("content-type", "text/plain")
                         .body(IOUtils
                                 .toByteArray("foo doc 3"))
@@ -327,8 +354,10 @@ public class ABACSpikeApplicationTests {
                                             .config()
                                             .encoderConfig(encoderConfig()
                                                     .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                    .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                            .substringAfter(brokerFooUri, "/brokers/")))
+                                    /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                            .substringAfter(brokerFooUri, "/brokers/")))*/
+                                    .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                            .substringAfter(brokerFooUri, "/brokers/"))))
                                     .get("/accountStates?page=0&size=2&sort=name&name.dir=asc")
                                     .then()
                                     .statusCode(HttpStatus.SC_OK)
@@ -371,8 +400,10 @@ public class ABACSpikeApplicationTests {
                                             .config()
                                             .encoderConfig(encoderConfig()
                                                     .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                    .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                            .substringAfter(brokerFooUri, "/brokers/")))
+                                    /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                            .substringAfter(brokerFooUri, "/brokers/")))*/
+                                    .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                            .substringAfter(brokerFooUri, "/brokers/"))))
                                     .header("accept", "application/hal+json")
                                     .get("/accountStates/search/findByType?type=sop_document&page=0&size=2&sort=name&name.dir=asc")
                                     .then()
@@ -415,8 +446,10 @@ public class ABACSpikeApplicationTests {
                                             .config()
                                             .encoderConfig(encoderConfig()
                                                     .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                    .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                            .substringAfter(brokerFooUri, "/brokers/")))
+                                    /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                            .substringAfter(brokerFooUri, "/brokers/")))*/
+                                    .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                            .substringAfter(brokerFooUri, "/brokers/"))))
                                     .header("accept", "application/hal+json")
                                     .get("/accountStates/search/byType?type=sop_document")
                                     .then()
@@ -453,8 +486,10 @@ public class ABACSpikeApplicationTests {
                                             .config()
                                             .encoderConfig(encoderConfig()
                                                     .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                    .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                            .substringAfter(brokerFooUri, "/brokers/")))
+                                    /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                            .substringAfter(brokerFooUri, "/brokers/")))*/
+                                    .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                            .substringAfter(brokerFooUri, "/brokers/"))))
                                     .header("Content-Type", "application/hal+json")
                                     .body("{\"name\":\"zzz updated\"}")
                                     .put(tenantFooDoc1)
@@ -484,8 +519,10 @@ public class ABACSpikeApplicationTests {
                                     .config()
                                     .encoderConfig(encoderConfig()
                                             .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                            .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                    .substringAfter(brokerBarUri, "/brokers/")))
+                            /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                    .substringAfter(brokerBarUri, "/brokers/")))*/
+                            .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                    .substringAfter(brokerBarUri, "/brokers/"))))
                             .header("Content-Type", "application/hal+json")
                             .body("{\"name\":\"zzz updated\",\"vstamp\":1}")
                             .put(tenantFooDoc1)
@@ -506,8 +543,10 @@ public class ABACSpikeApplicationTests {
                                     .config()
                                     .encoderConfig(encoderConfig()
                                             .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                            .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                    .substringAfter(brokerFooUri, "/brokers/")))
+                            /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                    .substringAfter(brokerFooUri, "/brokers/")))*/
+                            .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                    .substringAfter(brokerFooUri, "/brokers/"))))
                             .header("Accept", "application/hal+json")
                             .delete(tenantFooDoc1)
                             .then()
@@ -531,8 +570,10 @@ public class ABACSpikeApplicationTests {
                                     .config()
                                     .encoderConfig(encoderConfig()
                                             .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                            .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                    .substringAfter(brokerBarUri, "/brokers/")))
+                            /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                    .substringAfter(brokerBarUri, "/brokers/")))*/
+                            .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                    .substringAfter(brokerBarUri, "/brokers/"))))
                             .header("Accept", "application/hal+json")
                             .delete(tenantFooDoc1)
                             .then()
@@ -552,8 +593,10 @@ public class ABACSpikeApplicationTests {
                                             .config()
                                             .encoderConfig(encoderConfig()
                                                     .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                    .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                            .substringAfter(brokerFooUri, "/brokers/")))
+                                    /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                            .substringAfter(brokerFooUri, "/brokers/")))*/
+                                    .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                            .substringAfter(brokerFooUri, "/brokers/"))))
                                     .header("Accept", "text/plain")
                                     .get(tenantFooDoc1Content)
                                     .then()
@@ -575,8 +618,10 @@ public class ABACSpikeApplicationTests {
                                     .config()
                                     .encoderConfig(encoderConfig()
                                             .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                            .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                    .substringAfter(brokerBarUri, "/brokers/")))
+                            /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                    .substringAfter(brokerBarUri, "/brokers/")))*/
+                            .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                    .substringAfter(brokerBarUri, "/brokers/"))))
                             .header("Accept", "text/plain")
                             .put(tenantFooDoc1Content)
                             .then()
@@ -596,8 +641,10 @@ public class ABACSpikeApplicationTests {
                                             .config()
                                             .encoderConfig(encoderConfig()
                                                     .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                    .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                            .substringAfter(brokerFooUri, "/brokers/")))
+                                    /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                            .substringAfter(brokerFooUri, "/brokers/")))*/
+                                    .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                            .substringAfter(brokerFooUri, "/brokers/"))))
                                     .header("Accept", "image/jpeg")
                                     .get(tenantFooDoc1Content)
                                     .then()
@@ -623,8 +670,10 @@ public class ABACSpikeApplicationTests {
                                     .config()
                                     .encoderConfig(encoderConfig()
                                             .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                            .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                    .substringAfter(brokerBarUri, "/brokers/")))
+                            /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                    .substringAfter(brokerBarUri, "/brokers/")))*/
+                            .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                    .substringAfter(brokerBarUri, "/brokers/"))))
                             .header("Accept", "image/jpeg")
                             .get(tenantFooDoc1Content)
                             .then()
@@ -670,8 +719,10 @@ public class ABACSpikeApplicationTests {
                                     .config()
                                     .encoderConfig(encoderConfig()
                                             .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                            .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                    .substringAfter(brokerFooUri, "/brokers/")))
+                            /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                    .substringAfter(brokerFooUri, "/brokers/")))*/
+                            .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                    .substringAfter(brokerFooUri, "/brokers/"))))
                             .header("Accept", "application/hal+json")
                             .get("/accountStates/"
                                     + doc
@@ -690,8 +741,10 @@ public class ABACSpikeApplicationTests {
                                     .config()
                                     .encoderConfig(encoderConfig()
                                             .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                            .header("X-ABAC-Context", format("broker.id = %sL", StringUtils
-                                    .substringAfter(brokerBarUri, "/brokers/")))
+                            /*.header("X-ABAC-Context", format("broker.id = %sL", StringUtils
+                                    .substringAfter(brokerBarUri, "/brokers/")))*/
+                            .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                                    .substringAfter(brokerBarUri, "/brokers/"))))
                             .header("Accept", "application/hal+json")
                             .get("/accountStates/"
                                     + doc
@@ -710,7 +763,10 @@ public class ABACSpikeApplicationTests {
                             JsonPath results = given()
                                     .config(RestAssured.config()
                                             .encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
+/*
                                     .header("X-ABAC-Context", format("broker.id = %sL", StringUtils.substringAfter(brokerFooUri, "/brokers/")))
+*/
+                                    .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
                                     .header("Accept", "application/hal+json")
                                     .get(searchContentEndpoint(tenantFooDoc1, "doc"))
                                     .then()
@@ -737,5 +793,60 @@ public class ABACSpikeApplicationTests {
 
     private static String searchContentEndpoint(String entityEndpoint, String queryString) {
         return StringUtils.substringBeforeLast(entityEndpoint, "/") + "/searchContent?queryString=" + queryString;
+    }
+
+
+    public static String queryOPA(Long brokerId) throws IOException {
+        OpaQuery opaQuery = OpaQuery.builder()
+                .query("data.abac_spike.allow_partial == false")
+                .input(new OpaInput("GET", format("%sL", brokerId)))
+                .unknowns(Collections.singletonList("data.accountState"))
+                .build();
+
+        String residualPolicy = new RestTemplate()
+                .postForObject("http://127.0.0.1:8181/v1/compile", opaQuery, String.class);
+
+        //ResponseAST
+        Disjunction disjunction = AstWalker.walk(residualPolicy);
+        PDisjunction pDisjunction = ProtobufUtils.from(disjunction, "");
+        byte[] protoBytes = pDisjunction.toByteArray();
+        return Base64.getEncoder().encodeToString(protoBytes);
+    }
+
+
+    /**
+     * Example:
+     * {
+     *   "query": "data.abac_spike.allow_partial == false",
+     *   "input": {
+     *     "action": "GET",
+     *     "brokerId": "1l"
+     *   },
+     *   "unknowns": [
+     *     "data.accountState"
+     *   ]
+     * }
+     */
+    @Data
+    @Builder
+    static class OpaQuery {
+        String query;
+        OpaInput input;
+        List<String> unknowns;
+
+        String toJson() throws JsonProcessingException {
+            return new ObjectMapper().writeValueAsString(this);
+        }
+    }
+
+    @Data
+    static class OpaInput {
+        String action;
+        String brokerId;
+
+        public OpaInput(String action, String brokerId) {
+            this.action = action;
+            this.brokerId = brokerId;
+        }
     }
 }
