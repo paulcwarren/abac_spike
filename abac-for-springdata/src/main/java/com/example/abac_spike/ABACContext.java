@@ -1,14 +1,16 @@
 package com.example.abac_spike;
 
+import be.heydari.lib.expressions.Disjunction;
+
 public class ABACContext {
 
-    private static ThreadLocal<String> currentAbacContext = new InheritableThreadLocal<String>();
+    private static ThreadLocal<Disjunction> currentAbacContext = new InheritableThreadLocal<Disjunction>();
 
-    public static String getCurrentAbacContext() {
+    public static Disjunction getCurrentAbacContext() {
         return currentAbacContext.get();
     }
 
-    public static void setCurrentAbacContext(String tenant) {
+    public static void setCurrentAbacContext(Disjunction tenant) {
         currentAbacContext.set(tenant);
     }
 

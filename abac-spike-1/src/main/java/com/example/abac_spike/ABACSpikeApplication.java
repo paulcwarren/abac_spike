@@ -73,12 +73,14 @@ public class ABACSpikeApplication {
 
                 @Override
                 public String[] filterQueries(Class<?> entity) {
-
-                    String abacContext = ABACContext.getCurrentAbacContext();
+                    // Emad
+                    // todo: comment out for now
+                    /*String abacContext = ABACContext.getCurrentAbacContext();
                     String fq = abacContext.replace(".", "_");
                     fq = fq.replace("=", ":");
                     fq = fq.replace(" ", "");
-                    return new String[] {fq.replaceFirst("L$", "")};
+                    return new String[] {fq.replaceFirst("L$", "")};*/
+                    return new String[0];
                 }
             };
         }
