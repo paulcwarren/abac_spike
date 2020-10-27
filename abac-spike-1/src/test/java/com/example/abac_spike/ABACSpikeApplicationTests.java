@@ -18,22 +18,15 @@ import static org.hamcrest.Matchers.isIn;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.*;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 import javax.imageio.ImageIO;
 import javax.persistence.EntityManager;
 
-import be.heydari.AstWalker;
-import be.heydari.lib.converters.protobuf.ProtobufUtils;
-import be.heydari.lib.converters.protobuf.generated.PDisjunction;
-import be.heydari.lib.expressions.Disjunction;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Builder;
-import lombok.Data;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
@@ -49,12 +42,21 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.versions.VersionInfo;
+import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.paulcwarren.ginkgo4j.Ginkgo4jConfiguration;
 import com.github.paulcwarren.ginkgo4j.Ginkgo4jSpringRunner;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.path.json.JsonPath;
-import org.springframework.web.client.RestTemplate;
+
+import be.heydari.AstWalker;
+import be.heydari.lib.converters.protobuf.ProtobufUtils;
+import be.heydari.lib.converters.protobuf.generated.PDisjunction;
+import be.heydari.lib.expressions.Disjunction;
+import lombok.Builder;
+import lombok.Data;
 
 @RunWith(Ginkgo4jSpringRunner.class)
 @Ginkgo4jConfiguration(threads = 1)
