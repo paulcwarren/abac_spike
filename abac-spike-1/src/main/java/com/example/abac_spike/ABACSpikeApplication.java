@@ -6,6 +6,8 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
+import be.heydari.lib.converters.solr.SolrUtils;
+import be.heydari.lib.expressions.Disjunction;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,14 +75,8 @@ public class ABACSpikeApplication {
 
                 @Override
                 public String[] filterQueries(Class<?> entity) {
-                    // Emad
-                    // todo: comment out for now
-                    /*String abacContext = ABACContext.getCurrentAbacContext();
-                    String fq = abacContext.replace(".", "_");
-                    fq = fq.replace("=", ":");
-                    fq = fq.replace(" ", "");
-                    return new String[] {fq.replaceFirst("L$", "")};*/
-                    return new String[0];
+                    Disjunction abacContext = ABACContext.getCurrentAbacContext();
+                    return SolrUtils.from(abacContext,"");
                 }
             };
         }
