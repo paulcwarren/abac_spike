@@ -12,7 +12,7 @@
 ```
 # run OPA
 cd abac-spike-1/src/test/resources/policies
-docker run -v $PWD:/policies -p 8181:8181 openpolicyagent/opa:0.20.5 run --server --log-level debug --bundle /policies'
+docker run -v $PWD:/policies -p 8181:8181 openpolicyagent/opa:0.20.5 run --server --log-level debug --bundle /policies
 
 # execute a query
 cd abac-spike-1/src/test/resources/policies
