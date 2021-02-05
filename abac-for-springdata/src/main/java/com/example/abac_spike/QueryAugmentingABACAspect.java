@@ -179,7 +179,9 @@ public class QueryAugmentingABACAspect {
                 newWherePredicate = cb.and(existingPredicate, abacPredicate);
             }
 
-            cq.where(newWherePredicate);
+            if (newWherePredicate != null) {
+                cq.where(newWherePredicate);
+            }
         } catch (Throwable e) {
             e.printStackTrace();
         }
