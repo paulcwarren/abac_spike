@@ -734,7 +734,7 @@ public class ABACSpikeApplicationTests {
                         });
                     });
 
-                    Context("when a broker gets a rendition for content they do not own", () -> {
+                    Context("when a broker gets a version of an account state they do not own", () -> {
 
                         It("should fail with a 404", () -> {
 

@@ -7,7 +7,6 @@
 	<artifactId>abac-spike-parent</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
-	
 
 	<name>abac-spike-parent</name>
 	<description>Example project investigating query augmentation for ABAC</description>
@@ -20,6 +19,8 @@
 	<modules>
 		<module>abac-for-springdata</module>
 		<module>abac-spike-1</module>
+        <module>abac-querydsl-for-springdata</module>
+        <module>abac-spike-2</module>
 	</modules>
 
 	<repositories>
