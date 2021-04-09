@@ -98,7 +98,6 @@ public class AbacSpike2Tests {
                 // add some brokers
                 {
                     json = given()
-                            .auth().preemptive().basic("tuser", "tuser")
                             .header("content-type", "application/hal+json")
                             .body("{\"name\":\"foo\"}")
                             .post("/brokers/")
@@ -111,7 +110,6 @@ public class AbacSpike2Tests {
                             .get("_links.self.href");
 
                     json = given()
-                            .auth().preemptive().basic("tuser", "tuser")
                             .header("content-type", "application/hal+json")
                             .body("{\"name\":\"bar\"}")
                             .post("/brokers/")
@@ -127,7 +125,6 @@ public class AbacSpike2Tests {
                 // add account statements owned by brokers' broker ID
                 {
                     json = given()
-                            .auth().preemptive().basic("tuser", "tuser")
                             .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                             .substringAfter(brokerFooUri, "/brokers/"))))
                             .header("content-type", "application/hal+json")
@@ -144,7 +141,6 @@ public class AbacSpike2Tests {
                             .get("_links.content.href");
 
                     json = given()
-                            .auth().preemptive().basic("tuser", "tuser")
                             .contentType("text/uri-list")
                             .body(format("%s", brokerFooUri))
                             .put(tenantFooDoc1
@@ -159,7 +155,6 @@ public class AbacSpike2Tests {
                             .config()
                             .encoderConfig(encoderConfig()
                                     .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                    .auth().preemptive().basic("tuser", "tuser")
                     .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                             .substringAfter(brokerFooUri, "/brokers/"))))
                     .header("content-type", "text/plain")
@@ -172,7 +167,6 @@ public class AbacSpike2Tests {
                     json = given()
                             .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                     .substringAfter(brokerBarUri, "/brokers/"))))
-                            .auth().preemptive().basic("tuser", "tuser")
                             .header("content-type", "application/hal+json")
                             .body("{\"name\":\"www\",\"type\":\"sop_document\"}")
                             .post("/accountStates/")
@@ -187,7 +181,6 @@ public class AbacSpike2Tests {
                             .get("_links.content.href");
 
                     json = given()
-                            .auth().preemptive().basic("tuser", "tuser")
                             .contentType("text/uri-list")
                             .body(format("%s", brokerBarUri))
                             .put(tenantBarDoc1
@@ -202,7 +195,6 @@ public class AbacSpike2Tests {
                             .config()
                             .encoderConfig(encoderConfig()
                                     .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                    .auth().preemptive().basic("tuser", "tuser")
                     .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                             .substringAfter(brokerBarUri, "/brokers/"))))
                     .header("content-type", "text/plain")
@@ -215,7 +207,6 @@ public class AbacSpike2Tests {
                     json = given()
                             .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                     .substringAfter(brokerFooUri, "/brokers/"))))
-                            .auth().preemptive().basic("tuser", "tuser")
                             .header("content-type", "application/hal+json")
                             .body("{\"name\":\"ppp\",\"type\":\"sop_document\"}")
                             .post("/accountStates/")
@@ -230,7 +221,6 @@ public class AbacSpike2Tests {
                             .get("_links.content.href");
 
                     json = given()
-                            .auth().preemptive().basic("tuser", "tuser")
                             .contentType("text/uri-list")
                             .body(format("%s", brokerFooUri))
                             .put(tenantFooDoc2
@@ -245,7 +235,6 @@ public class AbacSpike2Tests {
                             .config()
                             .encoderConfig(encoderConfig()
                                     .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                    .auth().preemptive().basic("tuser", "tuser")
                     .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                             .substringAfter(brokerFooUri, "/brokers/"))))
                     .header("content-type", "text/plain")
@@ -258,7 +247,6 @@ public class AbacSpike2Tests {
                     json = given()
                             .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                     .substringAfter(brokerFooUri, "/brokers/"))))
-                            .auth().preemptive().basic("tuser", "tuser")
                             .header("content-type", "application/hal+json")
                             .body("{\"name\":\"aaa\",\"type\":\"sop_document\"}")
                             .post("/accountStates/")
@@ -273,7 +261,6 @@ public class AbacSpike2Tests {
                             .get("_links.content.href");
 
                     json = given()
-                            .auth().preemptive().basic("tuser", "tuser")
                             .contentType("text/uri-list")
                             .body(format("%s", brokerFooUri))
                             .put(tenantFooDoc3
@@ -290,7 +277,6 @@ public class AbacSpike2Tests {
                                     .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
                     .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                             .substringAfter(brokerFooUri, "/brokers/"))))
-                    .auth().preemptive().basic("tuser", "tuser")
                     .header("content-type", "text/plain")
                     .body(IOUtils
                             .toByteArray("foo doc 3"))
@@ -298,23 +284,6 @@ public class AbacSpike2Tests {
                     .then()
                     .statusCode(HttpStatus.SC_CREATED);
                 }
-
-                // add some other documents
-//                {
-//                    given()
-//                    .header("content-type", "application/hal+json")
-//                    .body("{\"type\":\"other\"}")
-//                    .post("/otherDocuments/")
-//                    .then()
-//                    .statusCode(HttpStatus.SC_CREATED);
-//
-//                    given()
-//                    .header("content-type", "application/hal+json")
-//                    .body("{\"type\":\"other\"}")
-//                    .post("/otherDocuments/")
-//                    .then()
-//                    .statusCode(HttpStatus.SC_CREATED);
-//                }
             });
 
             Context("findAll", () -> {
@@ -327,7 +296,6 @@ public class AbacSpike2Tests {
                                         .config()
                                         .encoderConfig(encoderConfig()
                                                 .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                .auth().preemptive().basic("tuser", "tuser")
                                 .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                         .substringAfter(brokerFooUri, "/brokers/"))))
                                 .get("/accountStates?page=0&size=2&sort=name&name.dir=asc")
@@ -366,11 +334,9 @@ public class AbacSpike2Tests {
                                     .config()
                                     .encoderConfig(encoderConfig()
                                             .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                            .auth().preemptive().basic("tuser", "tuser")
                             .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                     .substringAfter(brokerFooUri, "/brokers/"))))
-//                        .get("/accountStates?page=0&size=2&sort=name&name.dir=asc")
-                            .get("/accountStates?name=www")
+                            .get("/accountStates?name=www&page=0&size=2&sort=name&name.dir=asc")
                             .then()
                             .statusCode(HttpStatus.SC_OK)
                             .extract()
@@ -384,11 +350,9 @@ public class AbacSpike2Tests {
                                     .config()
                                     .encoderConfig(encoderConfig()
                                             .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                            .auth().preemptive().basic("tuser", "tuser")
                             .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                     .substringAfter(brokerBarUri, "/brokers/"))))
-//                        .get("/accountStates?page=0&size=2&sort=name&name.dir=asc")
-                            .get("/accountStates?name=www")
+                            .get("/accountStates?name=www&page=0&size=2&sort=name&name.dir=asc")
                             .then()
                             .statusCode(HttpStatus.SC_OK)
                             .extract()
@@ -408,28 +372,26 @@ public class AbacSpike2Tests {
                                     .config()
                                     .encoderConfig(encoderConfig()
                                             .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                            .auth().preemptive().basic("tuser", "tuser")
                             .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                     .substringAfter(brokerFooUri, "/brokers/"))))
                             .header("accept", "application/hal+json")
-//                        .get("/accountStates?page=0&size=2&sort=name&name.dir=asc")
-                            .get("/accountStates/" + StringUtils.substringAfter(tenantBarDoc1, "/accountStates/"))
+                            .get("/accountStates/" + StringUtils.substringAfter(tenantBarDoc1, "/accountStates/") + "?page=0&size=2&sort=name&name.dir=asc")
                             .then()
                             .statusCode(HttpStatus.SC_NOT_FOUND);
 
-                    given()
+                    json = given()
                             .config(RestAssured
                                     .config()
                                     .encoderConfig(encoderConfig()
                                             .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                            .auth().preemptive().basic("tuser", "tuser")
                             .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                     .substringAfter(brokerBarUri, "/brokers/"))))
                             .header("accept", "application/hal+json")
-//                        .get("/accountStates?page=0&size=2&sort=name&name.dir=asc")
-                            .get("/accountStates/" + StringUtils.substringAfter(tenantBarDoc1, "/accountStates/"))
+                            .get("/accountStates/" + StringUtils.substringAfter(tenantBarDoc1, "/accountStates/") + "?page=0&size=2&sort=name&name.dir=asc")
                             .then()
-                            .statusCode(HttpStatus.SC_OK);
+                            .statusCode(HttpStatus.SC_OK)
+                            .extract()
+                            .jsonPath();
                 });
             });
 
@@ -443,7 +405,6 @@ public class AbacSpike2Tests {
                                         .config()
                                         .encoderConfig(encoderConfig()
                                                 .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                .auth().preemptive().basic("tuser", "tuser")
                                 .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                         .substringAfter(brokerFooUri, "/brokers/"))))
                                 .header("accept", "application/hal+json")
@@ -488,7 +449,6 @@ public class AbacSpike2Tests {
                                         .config()
                                         .encoderConfig(encoderConfig()
                                                 .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                .auth().preemptive().basic("tuser", "tuser")
                                 .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                         .substringAfter(brokerFooUri, "/brokers/"))))
                                 .header("Content-Type", "application/hal+json")
@@ -520,7 +480,6 @@ public class AbacSpike2Tests {
                                 .config()
                                 .encoderConfig(encoderConfig()
                                         .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                        .auth().preemptive().basic("tuser", "tuser")
                         .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                 .substringAfter(brokerBarUri, "/brokers/"))))
                         .header("Content-Type", "application/hal+json")
@@ -543,7 +502,6 @@ public class AbacSpike2Tests {
                                 .config()
                                 .encoderConfig(encoderConfig()
                                         .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                        .auth().preemptive().basic("tuser", "tuser")
                         .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                 .substringAfter(brokerFooUri, "/brokers/"))))
                         .header("Accept", "application/hal+json")
@@ -569,7 +527,6 @@ public class AbacSpike2Tests {
                                 .config()
                                 .encoderConfig(encoderConfig()
                                         .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                        .auth().preemptive().basic("tuser", "tuser")
                         .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                 .substringAfter(brokerBarUri, "/brokers/"))))
                         .header("Accept", "application/hal+json")
@@ -591,7 +548,6 @@ public class AbacSpike2Tests {
                                         .config()
                                         .encoderConfig(encoderConfig()
                                                 .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                .auth().preemptive().basic("tuser", "tuser")
                                 .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                         .substringAfter(brokerFooUri, "/brokers/"))))
                                 .header("Accept", "text/plain")
@@ -616,7 +572,6 @@ public class AbacSpike2Tests {
                                 .config()
                                 .encoderConfig(encoderConfig()
                                         .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                        .auth().preemptive().basic("tuser", "tuser")
                         .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                 .substringAfter(brokerBarUri, "/brokers/"))))
                         .header("Accept", "text/plain")
@@ -638,7 +593,6 @@ public class AbacSpike2Tests {
                                         .config()
                                         .encoderConfig(encoderConfig()
                                                 .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                .auth().preemptive().basic("tuser", "tuser")
                                 .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                         .substringAfter(brokerFooUri, "/brokers/"))))
                                 .header("Accept", "image/jpeg")
@@ -666,7 +620,6 @@ public class AbacSpike2Tests {
                                 .config()
                                 .encoderConfig(encoderConfig()
                                         .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                        .auth().preemptive().basic("tuser", "tuser")
                         .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
                                 .substringAfter(brokerBarUri, "/brokers/"))))
                         .header("Accept", "image/jpeg")
@@ -756,7 +709,6 @@ public class AbacSpike2Tests {
                         JsonPath results = given()
                                 .config(RestAssured.config()
                                         .encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                .auth().preemptive().basic("tuser", "tuser")
                                 .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
                                 .header("Accept", "application/hal+json")
                                 .get(searchContentEndpoint(tenantFooDoc1, "doc"))

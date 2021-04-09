@@ -20,6 +20,7 @@ import org.springframework.data.jpa.repository.support.JpaEntityInformationSuppo
 import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.support.Repositories;
+import org.springframework.transaction.TransactionManager;
 import org.springframework.web.util.UrlPathHelper;
 
 import be.heydari.lib.converters.protobuf.ProtobufUtils;
@@ -36,15 +37,15 @@ public class ABACConfiguration {
     }
 
     @Bean
-    public ABACRequestFilter abacFilter(Repositories repos, EntityManager em) {
-        return new ABACRequestFilter(repos, em);
+    public ABACRequestFilter abacFilter(Repositories repos, EntityManager em, TransactionManager tm) {
+        return new ABACRequestFilter(repos, em, tm);
     }
 
     @Bean
-    public FilterRegistrationBean<ABACRequestFilter> abacFilterRegistration(Repositories repos, EntityManager em) {
+    public FilterRegistrationBean<ABACRequestFilter> abacFilterRegistration(Repositories repos, EntityManager em, TransactionManager tm) {
         FilterRegistrationBean<ABACRequestFilter> registrationBean = new FilterRegistrationBean<>();
 
-        registrationBean.setFilter(abacFilter(repos, em));
+        registrationBean.setFilter(abacFilter(repos, em, tm));
         registrationBean.addUrlPatterns("/accountStates/*");
         registrationBean.addUrlPatterns("/content/*");
 
@@ -55,10 +56,12 @@ public class ABACConfiguration {
 
         private final Repositories repos;
         private final EntityManager em;
+        private final TransactionManager tm;
 
-        public ABACRequestFilter(Repositories repos, EntityManager em) {
+        public ABACRequestFilter(Repositories repos, EntityManager em, TransactionManager tm) {
             this.repos = repos;
             this.em = em;
+            this.tm = tm;
         }
 
         @Override
@@ -83,6 +86,8 @@ public class ABACConfiguration {
             if (entityClass != null) {
                 EntityContext.setCurrentEntityContext(ei);
             }
+
+            EntityManagerContext.setCurrentEntityContext(em, tm);
 
             // Emad
             String abacContext = request.getHeader("X-ABAC-Context");
