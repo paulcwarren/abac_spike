@@ -7,17 +7,20 @@ import javax.persistence.Id;
 
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
-import org.springframework.beans.InvalidPropertyException;
-import org.springframework.beans.NullValueInNestedPathException;
 import org.springframework.content.commons.utils.BeanUtils;
+import org.springframework.content.commons.utils.DomainObjectUtils;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.querydsl.ABACContext;
 import org.springframework.data.querydsl.EntityContext;
+import org.springframework.data.querydsl.EntityManagerContext;
 import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.data.querydsl.QuerydslRepositoryInvokerAdapter;
-import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.data.repository.support.RepositoryInvoker;
+import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.format.support.DefaultFormattingConversionService;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.util.Assert;
 
 import com.querydsl.core.BooleanBuilder;
@@ -26,8 +29,6 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.PathBuilder;
 
-import be.heydari.lib.expressions.BoolPredicate;
-import be.heydari.lib.expressions.Conjunction;
 import be.heydari.lib.expressions.Disjunction;
 
 public class XenitQuerydslRepositoryInvokerAdapter extends QuerydslRepositoryInvokerAdapter {
@@ -58,13 +59,10 @@ public class XenitQuerydslRepositoryInvokerAdapter extends QuerydslRepositoryInv
         return (Optional<T>) executor.findOne(builder.getValue());
     }
 
-//  We decided this implementation is just plain wrong.  When saving an entity we think we would like to perform an insert into ... select
-//  in order to apply the abac policies.
-//
-//  But, the subject of an `insert into` where clause differ from those of a select (or delete) and therefore from the abac policies
-//  disjunctions that a findById or delete receive.
-//
-//  I assume that OPA policies be written such that save requests send abac policy disjunctions with the right subject type?
+//  When saving an entity we first save and then findById that applies the abac policy.  If this find return null we throw a RNFE that rollback
+//  the transaction
+
+//  OPA policies are written in terms of the obhect being saved
 //
     @Override
     public <T> T invokeSave(T object) {
@@ -74,13 +72,42 @@ public class XenitQuerydslRepositoryInvokerAdapter extends QuerydslRepositoryInv
             return super.invokeSave(object);
         }
 
-        EntityInformation ei = EntityContext.getCurrentEntityContext();
+        PlatformTransactionManager tm = EntityManagerContext.getCurrentEntityContext().getTm();
 
-        if (ei.isNew(object) == false) {
-            enforceAbacAttributes(object, abacContext);
+        TransactionStatus status = null;
+        T entityToReturn = null;
+        try {
+
+            if (tm != null) {
+                status = tm.getTransaction(new DefaultTransactionDefinition());
+            }
+
+            T savedEntity = super.invokeSave(object);
+
+            Field idField = DomainObjectUtils.getIdField(object.getClass());
+            Assert.notNull(idField, "missing id field");
+
+            BeanWrapper wrapper = new BeanWrapperImpl(savedEntity);
+            Object id = wrapper.getPropertyValue(idField.getName());
+
+            Optional<T> fetchedEntity = this.invokeFindById(id);
+            if (!fetchedEntity.isPresent()) {
+                throw new ResourceNotFoundException(String.format("id: %s", id));
+            }
+
+            entityToReturn = fetchedEntity.get();
+
+            if (status != null && status.isCompleted() == false) {
+                tm.commit(status);
+            }
+        } catch (Exception e) {
+            if (status != null && status.isCompleted() == false) {
+                tm.rollback(status);
+            }
+            throw e;
         }
 
-        return super.invokeSave(object);
+        return entityToReturn;
     }
 
 //    No implementation required.  When performing a delete through the REST API the Controller first does a findById call
@@ -116,25 +143,5 @@ public class XenitQuerydslRepositoryInvokerAdapter extends QuerydslRepositoryInv
         Field idField = BeanUtils.findFieldWithAnnotation(EntityContext.getCurrentEntityContext().getJavaType(), Id.class);
         PathBuilder idPath = entityPath.get(idField.getName(), id.getClass());
         return idPath.eq(Expressions.constant(id));
-    }
-
-    private void enforceAbacAttributes(Object entity, Disjunction abacContext) {
-        BeanWrapper wrapper = new BeanWrapperImpl(entity);
-
-        for (Conjunction conjunction : abacContext.getConjunctivePredicates()) {
-
-            for (BoolPredicate predicate : conjunction.getPredicates()) {
-
-                try {
-                    String strProperty = predicate.getLeft().getColumn();
-                    Object value = wrapper.getPropertyValue(strProperty);
-                    if (!conversionService.convert(predicate.getRight().getValue(), wrapper.getPropertyType(strProperty)).equals(value)) {
-                        throw new SecurityException();
-                    }
-                } catch (NullValueInNestedPathException nvinpe) {
-                    throw new SecurityException();
-                } catch (InvalidPropertyException ipe) {}
-            }
-        }
     }
 }
