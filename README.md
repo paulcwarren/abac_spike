@@ -1,4 +1,4 @@
-# How to run
+# How to run Spike 1
 
 1. `git clone https://github.com/paulcwarren/abac_spike_1`
 2. `cd abac-spike-1` 
@@ -8,8 +8,15 @@
 6. `popd`
 7. `mvn clean test`
 
-# How to test OPA
+# How to run Spike 2
 
+For a simpler test setup Spike 2 uses [testcontainers](https://www.testcontainers.org/).
+
+1. `git clone https://github.com/paulcwarren/abac_spike_1`
+2. `cd abac-spike-2` 
+3. `mvn clean test`
+
+# How to test OPA
 ```
 # run OPA
 cd abac-spike-1/src/test/resources/policies
@@ -19,3 +26,4 @@ docker run -v $PWD:/policies -p 8181:8181 openpolicyagent/opa:0.20.5 run --serve
 cd abac-spike-1/src/test/resources/policies
 curl -X POST --data-binary @query.json 127.0.0.1:8181/v1/compile | python -m json.tool
 ```
+

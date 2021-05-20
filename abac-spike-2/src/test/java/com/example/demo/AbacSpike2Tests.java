@@ -64,6 +64,9 @@ public class AbacSpike2Tests {
     int port;
 
     @Autowired
+    private String opaUrl;
+
+    @Autowired
     private AccountStateRepository repo;
 
     @Autowired
@@ -128,7 +131,7 @@ public class AbacSpike2Tests {
                 // add account statements owned by brokers' broker ID
                 {
                     json = given()
-                            .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                            .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils
                                             .substringAfter(brokerFooUri, "/brokers/"))))
                             .header("content-type", "application/hal+json")
                             .body("{\"name\":\"zzz\",\"type\":\"sop_document\",\"broker\":\"" + brokerFooUri + "\"}")
@@ -146,7 +149,7 @@ public class AbacSpike2Tests {
                                 .config()
                                 .encoderConfig(encoderConfig()
                                         .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                        .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
+                        .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
                         .header("content-type", "text/plain")
                         .body(IOUtils.toByteArray("foo doc 1"))
                         .post(tenantFooDoc1Content)
@@ -154,7 +157,7 @@ public class AbacSpike2Tests {
                         .statusCode(HttpStatus.SC_CREATED);
 
                     json = given()
-                            .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                            .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils
                                     .substringAfter(brokerBarUri, "/brokers/"))))
                             .header("content-type", "application/hal+json")
                             .body("{\"name\":\"www\",\"type\":\"sop_document\",\"broker\":\"" + brokerBarUri + "\"}")
@@ -172,7 +175,7 @@ public class AbacSpike2Tests {
                             .config()
                             .encoderConfig(encoderConfig()
                                     .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                    .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerBarUri, "/brokers/"))))
+                    .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerBarUri, "/brokers/"))))
                     .header("content-type", "text/plain")
                     .body(IOUtils.toByteArray("bar doc 1"))
                     .post(tenantBarDoc1Content)
@@ -180,7 +183,7 @@ public class AbacSpike2Tests {
                     .statusCode(HttpStatus.SC_CREATED);
 
                     json = given()
-                            .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                            .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils
                                     .substringAfter(brokerFooUri, "/brokers/"))))
                             .header("content-type", "application/hal+json")
                             .body("{\"name\":\"ppp\",\"type\":\"sop_document\",\"broker\":\"" + brokerFooUri + "\"}")
@@ -198,7 +201,7 @@ public class AbacSpike2Tests {
                             .config()
                             .encoderConfig(encoderConfig()
                                     .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                    .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
+                    .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
                     .header("content-type", "text/plain")
                     .body(IOUtils.toByteArray("foo doc 2"))
                     .post(tenantFooDoc2Content)
@@ -206,7 +209,7 @@ public class AbacSpike2Tests {
                     .statusCode(HttpStatus.SC_CREATED);
 
                     json = given()
-                            .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
+                            .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
                             .header("content-type", "application/hal+json")
                             .body("{\"name\":\"aaa\",\"type\":\"sop_document\",\"broker\":\"" + brokerFooUri + "\"}")
                             .post("/accountStates/")
@@ -223,7 +226,7 @@ public class AbacSpike2Tests {
                             .config()
                             .encoderConfig(encoderConfig()
                                     .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                    .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
+                    .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
                     .header("content-type", "text/plain")
                     .body(IOUtils.toByteArray("foo doc 3"))
                     .post(tenantFooDoc3Content)
@@ -242,7 +245,7 @@ public class AbacSpike2Tests {
                                         .config()
                                         .encoderConfig(encoderConfig()
                                                 .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
+                                .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
                                 .get("/accountStates?page=0&size=2&sort=name&name.dir=asc")
                                 .then()
                                 .statusCode(HttpStatus.SC_OK)
@@ -279,7 +282,7 @@ public class AbacSpike2Tests {
                                     .config()
                                     .encoderConfig(encoderConfig()
                                             .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                            .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
+                            .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
                             .get("/accountStates?name=www&page=0&size=2&sort=name&name.dir=asc")
                             .then()
                             .statusCode(HttpStatus.SC_OK)
@@ -294,7 +297,7 @@ public class AbacSpike2Tests {
                                     .config()
                                     .encoderConfig(encoderConfig()
                                             .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                            .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerBarUri, "/brokers/"))))
+                            .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerBarUri, "/brokers/"))))
                             .get("/accountStates?name=www&page=0&size=2&sort=name&name.dir=asc")
                             .then()
                             .statusCode(HttpStatus.SC_OK)
@@ -315,7 +318,7 @@ public class AbacSpike2Tests {
                                     .config()
                                     .encoderConfig(encoderConfig()
                                             .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                            .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
+                            .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
                             .header("accept", "application/hal+json")
                             .get("/accountStates/" + StringUtils.substringAfter(tenantBarDoc1, "/accountStates/") + "?page=0&size=2&sort=name&name.dir=asc")
                             .then()
@@ -326,7 +329,7 @@ public class AbacSpike2Tests {
                                     .config()
                                     .encoderConfig(encoderConfig()
                                             .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                            .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerBarUri, "/brokers/"))))
+                            .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerBarUri, "/brokers/"))))
                             .header("accept", "application/hal+json")
                             .get("/accountStates/" + StringUtils.substringAfter(tenantBarDoc1, "/accountStates/") + "?page=0&size=2&sort=name&name.dir=asc")
                             .then()
@@ -344,7 +347,7 @@ public class AbacSpike2Tests {
                                         .config()
                                         .encoderConfig(encoderConfig()
                                                 .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
+                                .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
                                 .header("accept", "application/hal+json")
                                 .get("/accountStates/search/findByType?type=sop_document&page=0&size=2&sort=name&name.dir=asc")
                                 .then()
@@ -395,7 +398,7 @@ public class AbacSpike2Tests {
                                         .config()
                                         .encoderConfig(encoderConfig()
                                                 .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
+                                .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
                                 .header("Content-Type", "application/hal+json")
                                 .body(body)
                                 .put(tenantFooDoc1)
@@ -433,7 +436,7 @@ public class AbacSpike2Tests {
                                 .config()
                                 .encoderConfig(encoderConfig()
                                         .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                        .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerBarUri, "/brokers/"))))
+                        .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerBarUri, "/brokers/"))))
                         .header("Content-Type", "application/hal+json")
                         .body(body)
                         .put(tenantFooDoc1)
@@ -458,7 +461,7 @@ public class AbacSpike2Tests {
                                 .config()
                                 .encoderConfig(encoderConfig()
                                         .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                        .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
+                        .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
                         .header("Accept", "application/hal+json")
                         .delete(tenantFooDoc1)
                         .then()
@@ -482,7 +485,7 @@ public class AbacSpike2Tests {
                                 .config()
                                 .encoderConfig(encoderConfig()
                                         .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                        .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils
+                        .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils
                                 .substringAfter(brokerBarUri, "/brokers/"))))
                         .header("Accept", "application/hal+json")
                         .delete(tenantFooDoc1)
@@ -503,7 +506,7 @@ public class AbacSpike2Tests {
                                         .config()
                                         .encoderConfig(encoderConfig()
                                                 .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
+                                .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
                                 .header("Accept", "text/plain")
                                 .auth().basic("tuser", "")
                                 .get(tenantFooDoc1Content)
@@ -526,7 +529,7 @@ public class AbacSpike2Tests {
                                 .config()
                                 .encoderConfig(encoderConfig()
                                         .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                        .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerBarUri, "/brokers/"))))
+                        .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerBarUri, "/brokers/"))))
                         .header("Accept", "text/plain")
                         .get(tenantFooDoc1Content)
                         .then()
@@ -546,7 +549,7 @@ public class AbacSpike2Tests {
                                         .config()
                                         .encoderConfig(encoderConfig()
                                                 .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
+                                .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
                                 .header("Accept", "image/jpeg")
                                 .get(tenantFooDoc1Content)
                                 .then()
@@ -570,7 +573,7 @@ public class AbacSpike2Tests {
                                 .config()
                                 .encoderConfig(encoderConfig()
                                         .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                        .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerBarUri, "/brokers/"))))
+                        .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerBarUri, "/brokers/"))))
                         .header("Accept", "image/jpeg")
                         .get(tenantFooDoc1Content)
                         .then()
@@ -617,7 +620,7 @@ public class AbacSpike2Tests {
                                 .encoderConfig(encoderConfig()
                                         .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
                         .auth().preemptive().basic("tuser", "tuser")
-                        .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
+                        .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
                         .header("Accept", "application/hal+json")
                         .get("/accountStates/" + doc.getId())
                         .then()
@@ -635,7 +638,7 @@ public class AbacSpike2Tests {
                                 .encoderConfig(encoderConfig()
                                         .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
                         .auth().preemptive().basic("tuser", "tuser")
-                        .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerBarUri, "/brokers/"))))
+                        .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerBarUri, "/brokers/"))))
                         .header("Accept", "application/hal+json")
                         .get("/accountStates/"+ doc.getId())
                         .then().statusCode(HttpStatus.SC_NOT_FOUND);
@@ -652,7 +655,7 @@ public class AbacSpike2Tests {
                         JsonPath results = given()
                                 .config(RestAssured.config()
                                         .encoderConfig(encoderConfig().appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                                .header("X-ABAC-Context", queryOPA(Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
+                                .header("X-ABAC-Context", queryOPA(opaUrl,Long.valueOf(StringUtils.substringAfter(brokerFooUri, "/brokers/"))))
                                 .header("Accept", "application/hal+json")
                                 .get(searchContentEndpoint(tenantFooDoc1, "doc"))
                                 .then()
@@ -676,7 +679,7 @@ public class AbacSpike2Tests {
         return StringUtils.substringBeforeLast(entityEndpoint, "/") + "/searchContent?queryString=" + queryString;
     }
 
-    public static String queryOPA(Long brokerId) throws IOException {
+    public static String queryOPA(String opaUrl, Long brokerId) throws IOException {
         OpaQuery opaQuery = OpaQuery.builder()
                 .query("data.abac_spike.allow_partial == false")
                 .input(new OpaInput("GET", format("%sL", brokerId)))
@@ -684,7 +687,7 @@ public class AbacSpike2Tests {
                 .build();
 
         String residualPolicy = new RestTemplate()
-                .postForObject("http://127.0.0.1:8181/v1/compile", opaQuery, String.class);
+                .postForObject(opaUrl + "/v1/compile", opaQuery, String.class);
 
         //ResponseAST
         Disjunction disjunction = AstWalker.walk(residualPolicy);

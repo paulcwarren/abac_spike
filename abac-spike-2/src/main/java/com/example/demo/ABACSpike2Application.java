@@ -8,7 +8,6 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +33,8 @@ import org.springframework.hateoas.server.LinkRelationProvider;
 import org.springframework.hateoas.server.mvc.RepresentationModelProcessorInvoker;
 import org.springframework.web.context.annotation.RequestScope;
 
+import com.example.demo.support.OPATestContainer;
+import com.example.demo.support.SolrTestContainer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import be.heydari.lib.converters.solr.SolrUtils;
@@ -58,7 +59,12 @@ public class ABACSpike2Application {
 	    public SolrClient solrClient(SolrProperties props) {
 	        props.setUser("solr");
 	        props.setPassword("SolrRocks");
-	        return new HttpSolrClient.Builder(props.getUrl()).build();
+	        return SolrTestContainer.getSolrClient();
+	    }
+
+	    @Bean
+	    public String opaUrl() {
+	        return OPATestContainer.opaURL();
 	    }
 
 	    @Bean
