@@ -3,7 +3,6 @@ package com.example.demo;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -25,13 +24,14 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.data.geo.GeoModule;
 import org.springframework.data.querydsl.ABACContext;
 import org.springframework.data.querydsl.EnableAbac;
-import org.springframework.data.querydsl.binding.XenitRepositoryRestMvcConfiguration;
+import org.springframework.data.rest.webmvc.config.XenitRepositoryRestMvcConfiguration;
 import org.springframework.hateoas.mediatype.MessageResolver;
 import org.springframework.hateoas.mediatype.hal.CurieProvider;
 import org.springframework.hateoas.mediatype.hal.HalConfiguration;
 import org.springframework.hateoas.server.LinkRelationProvider;
 import org.springframework.hateoas.server.mvc.RepresentationModelProcessorInvoker;
 import org.springframework.web.context.annotation.RequestScope;
+import org.springframework.web.util.pattern.PathPatternParser;
 
 import com.example.demo.support.OPATestContainer;
 import com.example.demo.support.SolrTestContainer;
@@ -51,8 +51,28 @@ public class ABACSpike2Application {
 	@Configuration
     public static class Config extends XenitRepositoryRestMvcConfiguration {
 
-	    public Config(ApplicationContext context, ObjectFactory<ConversionService> conversionService, Optional<LinkRelationProvider> relProvider, Optional<CurieProvider> curieProvider, Optional<HalConfiguration> halConfiguration, ObjectProvider<ObjectMapper> objectMapper, ObjectProvider<RepresentationModelProcessorInvoker> invoker, MessageResolver resolver, GeoModule geoModule) {
-            super(context, conversionService, relProvider, curieProvider, halConfiguration, objectMapper, invoker, resolver, geoModule);
+	    public Config(
+	            ApplicationContext context,
+	            ObjectFactory<ConversionService> conversionService,
+	            ObjectProvider<LinkRelationProvider> relProvider,
+	            ObjectProvider<CurieProvider> curieProvider,
+	            ObjectProvider<HalConfiguration> halConfiguration,
+	            ObjectProvider<ObjectMapper> objectMapper,
+	            ObjectProvider<RepresentationModelProcessorInvoker> invoker,
+	            ObjectProvider<MessageResolver> resolver,
+	            ObjectProvider<GeoModule> geoModule,
+	            ObjectProvider<PathPatternParser> parser) {
+            super(
+                    context,
+                    conversionService,
+                    relProvider,
+                    curieProvider,
+                    halConfiguration,
+                    objectMapper,
+                    invoker,
+                    resolver,
+                    geoModule,
+                    parser);
         }
 
 	    @Bean
